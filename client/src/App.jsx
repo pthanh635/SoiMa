@@ -28,8 +28,9 @@ const BLANK_VOTE = '**blank**';
 
 export default function App() {
   const [screen, setScreen] = useState('home');
-  const [name, setName] = useState(localStorage.getItem('masoi_name') || '');
-  const [roomInput, setRoomInput] = useState('');
+  const [moderatorName, setModeratorName] = useState(localStorage.getItem('masoi_moderator_name') || '');
+  const [playerName, setPlayerName] = useState(localStorage.getItem('masoi_player_name') || '');
+  const [roomCode, setRoomCode] = useState('');
   const [state, setState] = useState(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -62,16 +63,6 @@ export default function App() {
   const alivePlayers = useMemo(() => players.filter(player => player.alive), [players]);
   const canActAtNight = Boolean(state?.phase === 'night' && state?.me?.alive && state?.isMyNightTurn);
 
-  function saveName() {
-    const cleanName = name.trim();
-    if (!cleanName) {
-      setError('Vui lòng nhập tên của bạn.');
-      return null;
-    }
-    localStorage.setItem('masoi_name', cleanName);
-    return cleanName;
-  }
-
   function emit(event, payload, success) {
     setError('');
     socket.emit(event, payload, response => {
@@ -85,16 +76,19 @@ export default function App() {
   }
 
   function createRoom() {
-    const cleanName = saveName();
-    if (cleanName) emit('create_room', { name: cleanName });
+    const cleanName = moderatorName.trim();
+    if (!cleanName) return setError('Vui lòng nhập tên Quản trò.');
+    localStorage.setItem('masoi_moderator_name', cleanName);
+    emit('create_room', { name: cleanName });
   }
 
   function joinRoom() {
-    const cleanName = saveName();
-    if (!cleanName) return;
-    const roomCode = roomInput.trim().toUpperCase();
-    if (!roomCode) return setError('Vui lòng nhập mã phòng.');
-    emit('join_room', { roomCode, name: cleanName });
+    const cleanName = playerName.trim();
+    if (!cleanName) return setError('Vui lòng nhập tên người chơi.');
+    const normalizedRoomCode = roomCode.trim().toUpperCase();
+    if (!normalizedRoomCode) return setError('Vui lòng nhập mã phòng.');
+    localStorage.setItem('masoi_player_name', cleanName);
+    emit('join_room', { roomCode: normalizedRoomCode, name: cleanName });
   }
 
   function copyRoomCode() {
@@ -112,7 +106,7 @@ export default function App() {
   }
 
   if (screen === 'home') {
-    return <HomeScreen name={name} setName={setName} roomInput={roomInput} setRoomInput={setRoomInput} onCreate={createRoom} onJoin={joinRoom} error={error} />;
+    return <HomeScreen moderatorName={moderatorName} setModeratorName={setModeratorName} playerName={playerName} setPlayerName={setPlayerName} roomCode={roomCode} setRoomCode={setRoomCode} onCreate={createRoom} onJoin={joinRoom} error={error} />;
   }
 
   if (!state) return <LoadingScreen />;
@@ -149,7 +143,9 @@ export default function App() {
   );
 }
 
-function HomeScreen({ name, setName, roomInput, setRoomInput, onCreate, onJoin, error }) {
+function HomeScreen({ moderatorName, setModeratorName, playerName, setPlayerName, roomCode, setRoomCode, onCreate, onJoin, error }) {
+  const canCreate = Boolean(moderatorName.trim());
+  const canJoin = Boolean(playerName.trim() && roomCode.trim());
   return (
     <main className="page home-page">
       <header className="home-hero">
@@ -158,18 +154,19 @@ function HomeScreen({ name, setName, roomInput, setRoomInput, onCreate, onJoin, 
         <p>Tạo phòng, chia vai bí mật và chơi Ma Sói realtime cùng bạn bè.</p>
       </header>
       <section className="home-grid">
-        <article className="panel entry-card">
+        <form className="panel entry-card" onSubmit={event => { event.preventDefault(); onCreate(); }}>
           <span className="step-number">01</span><h2>Tạo phòng làm Quản trò</h2>
-          <p className="muted">Điều khiển trận đấu và mời người chơi tham gia.</p>
-          <label>Tên Quản trò<input value={name} onChange={event => setName(event.target.value)} placeholder="Ví dụ: Minh" maxLength="24" /></label>
-          <button className="primary-btn" onClick={onCreate}>Tạo phòng làm Quản trò</button>
-        </article>
-        <article className="panel entry-card">
+          <p className="muted">Quản trò điều khiển ván chơi, gọi vai và quản lý các giai đoạn.</p>
+          <label>Tên Quản trò<input value={moderatorName} onChange={event => setModeratorName(event.target.value)} placeholder="Ví dụ: Minh" maxLength="24" autoComplete="name" /></label>
+          <button className="primary-btn" type="submit" disabled={!canCreate}>Tạo phòng</button>
+        </form>
+        <form className="panel entry-card" onSubmit={event => { event.preventDefault(); onJoin(); }}>
           <span className="step-number">02</span><h2>Vào phòng làm Người chơi</h2>
-          <p className="muted">Nhập mã phòng do Người quản trò chia sẻ.</p>
-          <label>Mã phòng<input className="code-input" value={roomInput} onChange={event => setRoomInput(event.target.value.toUpperCase())} placeholder="ABCD" maxLength="4" onKeyDown={event => event.key === 'Enter' && onJoin()} /></label>
-          <button className="secondary-btn" onClick={onJoin}>Vào phòng làm Người chơi</button>
-        </article>
+          <p className="muted">Nhập tên của bạn và mã phòng do Quản trò chia sẻ.</p>
+          <label>Tên người chơi<input value={playerName} onChange={event => setPlayerName(event.target.value)} placeholder="Ví dụ: Lan" maxLength="24" autoComplete="name" /></label>
+          <label>Mã phòng<input className="code-input" value={roomCode} onChange={event => setRoomCode(event.target.value.replace(/\s/g, '').toUpperCase())} placeholder="ABCD" maxLength="4" autoComplete="off" /></label>
+          <button className="secondary-btn" type="submit" disabled={!canJoin}>Vào phòng</button>
+        </form>
       </section>
       {error && <p className="home-error" role="alert">{error}</p>}
       <p className="home-hint">Mỗi người chơi nên mở game trên một tab hoặc thiết bị riêng.</p>
