@@ -13,11 +13,14 @@ const PHASE_LABEL = {
 const ROLE_HINT = {
   villager: 'Quan sát, thảo luận và tìm ra Ma sói trước khi ngôi làng bị chiếm.',
   werewolf: 'Ban đêm chọn một người để cắn. Ban ngày hãy che giấu thân phận của bạn.',
+  wolf_child: 'Nếu bạn chết, đêm sau phe Sói được cắn 2 người.',
   seer: 'Mỗi đêm soi một người để biết họ thuộc phe Dân làng hay Ma sói.',
   guard: 'Mỗi đêm chọn một người để bảo vệ khỏi đòn cắn của Ma sói.',
   witch: 'Bạn có một bình cứu và một bình độc, mỗi bình chỉ dùng được một lần trong cả game.',
   hunter: 'Khi chết, bạn có một phát bắn cuối cùng để loại một người chơi còn sống.',
-  cupid: 'Đêm đầu tiên chọn hai người chơi để trở thành Cặp đôi.'
+  cupid: 'Đêm đầu tiên chọn hai người chơi để trở thành Cặp đôi.',
+  elder: 'Bạn có thể sống sót sau lần đầu bị Ma Sói cắn.',
+  cursed_villager: 'Nếu bị Ma Sói cắn, bạn sẽ hóa thành Ma Sói thay vì chết.'
 };
 
 const NIGHT_INFO = {
@@ -150,7 +153,7 @@ export default function App() {
             <PlayersPanel players={players} />
           </aside>
           <div className="right-stack">
-            {state.phase === 'night' && <NightPanel state={state} players={alivePlayers} canAct={canActAtNight} selectedTarget={selectedTarget} setSelectedTarget={setSelectedTarget} selectedCupidTargets={selectedCupidTargets} setSelectedCupidTargets={setSelectedCupidTargets} onAction={(targetId, action) => emit('night_action', { roomCode: state.code, targetId, action })} onCupidAction={targetIds => emit('night_action', { roomCode: state.code, targetIds })} onSkip={() => emit('skip_night_turn', { roomCode: state.code })} onNextStage={() => emit('moderator_next_stage', { roomCode: state.code })} onSkipStage={() => emit('moderator_skip_stage', { roomCode: state.code })} onEndNight={() => emit('end_night', { roomCode: state.code })} />}
+            {state.phase === 'night' && <NightPanel state={state} players={alivePlayers} canAct={canActAtNight} selectedTarget={selectedTarget} setSelectedTarget={setSelectedTarget} selectedCupidTargets={selectedCupidTargets} setSelectedCupidTargets={setSelectedCupidTargets} onAction={(target, action) => emit('night_action', Array.isArray(target) ? { roomCode: state.code, targetIds: target, action } : { roomCode: state.code, targetId: target, action })} onCupidAction={targetIds => emit('night_action', { roomCode: state.code, targetIds })} onSkip={() => emit('skip_night_turn', { roomCode: state.code })} onNextStage={() => emit('moderator_next_stage', { roomCode: state.code })} onSkipStage={() => emit('moderator_skip_stage', { roomCode: state.code })} onEndNight={() => emit('end_night', { roomCode: state.code })} />}
             {state.phase === 'day' && <DayPanel state={state} onGoVoting={() => emit('go_voting', { roomCode: state.code })} />}
             {state.phase === 'voting' && <VotingPanel state={state} players={alivePlayers} selectedTarget={selectedTarget} setSelectedTarget={setSelectedTarget} hasVoted={hasVoted} onVote={targetId => emit('vote_player', { roomCode: state.code, targetId }, () => setHasVoted(true))} onEndVote={() => emit('end_vote', { roomCode: state.code })} />}
             {state.phase === 'hunter_shot' && <HunterShotPanel state={state} players={alivePlayers} selectedTarget={selectedTarget} setSelectedTarget={setSelectedTarget} onShoot={targetId => emit('hunter_shot', { roomCode: state.code, targetId })} onSkip={() => emit('moderator_skip_hunter_shot', { roomCode: state.code })} />}
@@ -260,6 +263,7 @@ function RoleLibrary({ roles = [] }) {
 function RolePanel({ state }) {
   const me = state?.me;
   const role = me?.role || 'unknown';
+  const isWolfTeam = me?.team === 'werewolf' || me?.role === 'werewolf' || me?.isConvertedWerewolf;
   const status = me?.left ? 'Đã rời phòng' : !me?.connected ? 'Mất kết nối' : me?.alive ? 'Còn sống' : 'Đã chết';
   const currentAction = state?.isMyNightTurn ? NIGHT_INFO[state?.currentNightStage]?.instruction : null;
   return (
@@ -268,7 +272,9 @@ function RolePanel({ state }) {
       <dl className="identity-grid"><div><dt>Vai trò</dt><dd>{me?.roleLabel || 'Chưa chia vai'}</dd></div><div><dt>Phe</dt><dd>{me?.teamLabel || 'Chưa xác định'}</dd></div><div><dt>Mã phòng</dt><dd>{state?.code || '—'}</dd></div><div><dt>Vòng</dt><dd>{state?.round || '—'}</dd></div><div><dt>Giai đoạn</dt><dd>{PHASE_LABEL[state?.phase] || 'Đang chờ'}</dd></div><div><dt>Trạng thái</dt><dd>{status}</dd></div></dl>
       {me?.role && <div className="role-description"><strong>Mô tả vai</strong><p>{ROLE_HINT[me.role]}</p></div>}
       {currentAction && <div className="current-action"><strong>Lượt hiện tại</strong><p>{currentAction}</p></div>}
-      {me?.role === 'werewolf' && <WerewolfTeammates teammates={me?.werewolfTeammates || []} />}
+      {me?.role === 'elder' && <ElderInfo me={me} />}
+      {me?.role === 'cursed_villager' && <CursedInfo me={me} />}
+      {isWolfTeam && <WerewolfTeammates teammates={me?.werewolfTeammates || []} />}
       {state?.loverInfo && <LoverInfo info={state.loverInfo} />}
       {me?.role === 'witch' && <div className="potion-row"><span className={me?.witchPotions?.heal ? 'available' : 'used'}>Bình cứu: {me?.witchPotions?.heal ? 'còn' : 'đã dùng'}</span><span className={me?.witchPotions?.poison ? 'available' : 'used'}>Bình độc: {me?.witchPotions?.poison ? 'còn' : 'đã dùng'}</span></div>}
       {!me?.alive && <p className="dead-warning">Bạn đã chết và không thể hành động, nhắn tin hoặc biểu quyết.</p>}
@@ -280,6 +286,14 @@ function WerewolfTeammates({ teammates = [] }) {
   return <div className="wolf-teammates"><strong>Đồng đội Ma Sói</strong>{teammates.length ? <ul>{teammates.map(teammate => <li key={teammate.id}><span>{teammate.name}</span><small>{teammate.left ? 'Đã rời phòng' : !teammate.connected ? 'Mất kết nối' : teammate.alive ? 'Còn sống' : 'Đã chết'}</small></li>)}</ul> : <p>Bạn là Ma Sói duy nhất trong ván.</p>}</div>;
 }
 
+function ElderInfo({ me }) {
+  return <div className="elder-info"><strong>Già làng</strong><p>Bạn có thể sống sót sau lần đầu bị Ma Sói cắn.</p><small>Mạng chống Sói: {me?.elderLives ?? 1}/{me?.elderMaxLives || 2}</small></div>;
+}
+
+function CursedInfo({ me }) {
+  return <div className={`cursed-info ${me?.isConvertedWerewolf ? 'converted' : ''}`}><strong>Kẻ bị nguyền</strong>{me?.isConvertedWerewolf ? <><p>Bạn đã hóa thành Ma Sói.</p><small>Biến đổi ở vòng {me?.convertedAtRound || '—'}</small></> : <p>Nếu bị Ma Sói cắn, bạn sẽ hóa thành Ma Sói thay vì chết.</p>}</div>;
+}
+
 function LoverInfo({ info }) {
   const status = info?.partnerLeft ? 'Đã rời phòng' : !info?.partnerConnected ? 'Mất kết nối' : info?.partnerAlive ? 'Còn sống' : 'Đã chết';
   return <div className="lover-info"><strong>Cặp đôi của bạn</strong><p>Bạn đang được ghép đôi với: <strong>{info?.partnerName}</strong></p><p>Nếu một người chết, người còn lại cũng chết theo.</p><small>{status}</small></div>;
@@ -288,7 +302,7 @@ function LoverInfo({ info }) {
 function ModeratorIdentity({ state, onLeave }) {
   const moderator = state?.moderator;
   const lovers = moderator?.moderatorLoversInfo;
-  return <section className="panel moderator-identity"><div className="panel-heading"><div><p className="eyebrow">Thông tin Quản trò</p><h2>{moderator?.name || 'Bạn'}</h2></div><span className={`life-badge ${moderator?.connected ? 'alive' : 'dead'}`}>{moderator?.connected ? 'Đang kết nối' : 'Mất kết nối'}</span></div><dl className="identity-grid"><div><dt>Mã phòng</dt><dd>{state?.code || '—'}</dd></div><div><dt>Số người chơi</dt><dd>{state?.playerCount || 0}</dd></div><div><dt>Giai đoạn</dt><dd>{PHASE_LABEL[state?.phase] || 'Đang chờ'}</dd></div><div><dt>Vòng</dt><dd>{state?.round || '—'}</dd></div></dl><p className="muted">Quản trò điều khiển trận đấu và không tham gia như một người chơi.</p>{lovers && <div className="lover-info"><strong>Cặp đôi</strong>{lovers.names.map((name, index) => <p key={lovers.playerIds[index]}>{name} · {lovers.roleLabels[index]} · {lovers.aliveStatuses[index]?.alive ? 'Còn sống' : 'Đã chết'}</p>)}<small>Khác phe: {lovers.mixedFaction ? 'Có' : 'Không'}</small></div>}<button className="leave-btn moderator-leave" onClick={onLeave}>Rời phòng</button></section>;
+  return <section className="panel moderator-identity"><div className="panel-heading"><div><p className="eyebrow">Thông tin Quản trò</p><h2>{moderator?.name || 'Bạn'}</h2></div><span className={`life-badge ${moderator?.connected ? 'alive' : 'dead'}`}>{moderator?.connected ? 'Đang kết nối' : 'Mất kết nối'}</span></div><dl className="identity-grid"><div><dt>Mã phòng</dt><dd>{state?.code || '—'}</dd></div><div><dt>Số người chơi</dt><dd>{state?.playerCount || 0}</dd></div><div><dt>Giai đoạn</dt><dd>{PHASE_LABEL[state?.phase] || 'Đang chờ'}</dd></div><div><dt>Vòng</dt><dd>{state?.round || '—'}</dd></div></dl><p className="muted">Quản trò điều khiển trận đấu và không tham gia như một người chơi.</p>{lovers && <div className="lover-info"><strong>Cặp đôi</strong>{lovers.names.map((name, index) => <p key={lovers.playerIds[index]}>{name} · {lovers.roleLabels[index]} · {lovers.aliveStatuses[index]?.alive ? 'Còn sống' : 'Đã chết'}</p>)}<small>Khác phe: {lovers.mixedFaction ? 'Có' : 'Không'}</small></div>}{moderator?.moderatorNotes?.length > 0 && <div className="moderator-private-log"><strong>Ghi chú riêng</strong>{moderator.moderatorNotes.map(note => <p key={note.id}>Vòng {note.round}: {note.message}</p>)}</div>}<button className="leave-btn moderator-leave" onClick={onLeave}>Rời phòng</button></section>;
 }
 
 function PlayersPanel({ players = [], compact = false }) {
@@ -307,26 +321,41 @@ function NightPanel({ state, players = [], canAct, selectedTarget, setSelectedTa
   const me = state?.me;
   const current = NIGHT_INFO[state?.currentNightStage] || { title: `Quản trò đang gọi: ${state?.currentNightStageLabel || 'Vai khác'}`, instruction: 'Chờ Quản trò điều phối lượt đêm.' };
   const isWitch = me?.role === 'witch';
-  const isWerewolf = me?.role === 'werewolf';
+  const isWerewolf = me?.team === 'werewolf' || me?.role === 'werewolf' || me?.isConvertedWerewolf;
   const isCupidStage = state?.currentNightStage === 'cupid';
   const witchVictim = isWitch ? players.find(player => player.id === me?.witchVictim) : null;
+  const witchVictims = isWitch ? (me?.witchVictims?.length ? me.witchVictims : witchVictim ? [witchVictim] : []) : [];
+  const healTargetId = selectedTarget || (witchVictims.length === 1 ? witchVictims[0].id : '');
   const teammateIds = new Set((me?.werewolfTeammates || []).map(player => player.id));
   const targets = players.filter(player => me?.role === 'guard' || (player.id !== me?.id && (!isWerewolf || !teammateIds.has(player.id))));
   const wolfInfo = state?.werewolfNightInfo;
-  const ownWolfVote = wolfInfo?.votes?.find(vote => vote.wolfId === me?.id)?.targetId || null;
-  const effectiveSelectedTarget = isWerewolf ? (selectedTarget || ownWolfVote) : selectedTarget;
+  const wolfMaxTargets = wolfInfo?.maxTargets || 1;
+  const isWolfRevenge = isWerewolf && state?.currentNightStage === 'werewolf' && wolfMaxTargets > 1;
+  const ownWolfVote = wolfInfo?.votes?.find(vote => vote.wolfId === me?.id);
+  const ownWolfVoteIds = ownWolfVote?.targetIds?.length ? ownWolfVote.targetIds : ownWolfVote?.targetId ? [ownWolfVote.targetId] : [];
+  const hasLocalSelection = Array.isArray(selectedTarget) ? selectedTarget.length > 0 : Boolean(selectedTarget);
+  const effectiveSelectedTarget = isWerewolf ? (hasLocalSelection ? selectedTarget : isWolfRevenge ? ownWolfVoteIds : ownWolfVoteIds[0] || '') : selectedTarget;
+  const selectedCount = Array.isArray(effectiveSelectedTarget) ? effectiveSelectedTarget.length : effectiveSelectedTarget ? 1 : 0;
+  const title = isWolfRevenge ? 'Ma Sói nổi giận' : current.title;
+  const instruction = isWolfRevenge ? 'Sói con đã chết. Phe Sói có thể thống nhất tối đa 2 mục tiêu để cắn.' : current.instruction;
+  function toggleWolfTarget(playerId) {
+    const currentIds = Array.isArray(effectiveSelectedTarget) ? effectiveSelectedTarget : effectiveSelectedTarget ? [effectiveSelectedTarget] : [];
+    if (currentIds.includes(playerId)) return setSelectedTarget(currentIds.filter(id => id !== playerId));
+    if (currentIds.length < wolfMaxTargets) setSelectedTarget([...currentIds, playerId]);
+  }
   return (
     <section className={`panel action-panel night-panel turn-${state?.nightTurn || 'none'}`}>
-      <p className="eyebrow">Đêm {state?.round || 1}</p><h1 className="phase-title">{current.title}</h1><p className="instruction">{current.instruction}</p>
+      <p className="eyebrow">Đêm {state?.round || 1}</p><h1 className="phase-title">{title}</h1><p className="instruction">{instruction}</p>
       <NightOrder state={state} />
       {!canAct && !state?.isModerator && <div className="waiting-panel"><strong>{me?.alive ? `Quản trò đang gọi: ${state?.currentNightStageLabel || 'vai hiện tại'}` : 'Bạn đã bị loại nên không thể hành động.'}</strong><p>{me?.alive ? `Quản trò đang gọi: ${state?.currentNightStageLabel || 'vai hiện tại'}. Nếu không phải lượt của bạn, hãy chờ.` : 'Bạn chỉ có thể theo dõi diễn biến.'}</p></div>}
-      {canAct && <div className="your-turn"><span>ĐẾN LƯỢT BẠN HÀNH ĐỘNG</span><strong>{current.instruction}</strong></div>}
+      {canAct && <div className="your-turn"><span>ĐẾN LƯỢT BẠN HÀNH ĐỘNG</span><strong>{instruction}</strong></div>}
       {isCupidStage && canAct && me?.role === 'cupid' && <CupidSelection players={players} selected={selectedCupidTargets} setSelected={setSelectedCupidTargets} onConfirm={onCupidAction} />}
       {isCupidStage && me?.role === 'cupid' && state?.cupidInfo?.completed && <div className="success-note">Bạn đã ghép đôi: {state.cupidInfo.selectedNames.join(' và ')}.</div>}
       {isWerewolf && state?.currentNightStage === 'werewolf' && <WerewolfVoteDetails info={wolfInfo} currentWolfId={me?.id} />}
-      {canAct && isWitch && <div className="witch-actions"><p>{witchVictim ? <>Người bị Ma sói cắn: <strong>{witchVictim.name}</strong></> : <strong>Không có ai chết do Ma sói trong đêm nay.</strong>}</p><button className="safe-btn" disabled={!me?.witchPotions?.heal || !witchVictim} onClick={() => onAction(witchVictim?.id, 'heal')}>Dùng bình cứu {me?.witchPotions?.heal ? '' : '· Đã dùng'}</button></div>}
-      {canAct && !isCupidStage && (!isWitch || me?.witchPotions?.poison) && <TargetGrid players={targets} selected={effectiveSelectedTarget} onSelect={setSelectedTarget} prefix={isWitch ? 'Đầu độc' : 'Chọn'} />}
-      {canAct && !isCupidStage && !isWitch && <button className="primary-btn action-confirm" disabled={!effectiveSelectedTarget} onClick={() => onAction(effectiveSelectedTarget)}>{isWerewolf ? 'Bỏ phiếu cắn người này' : 'Xác nhận hành động'}</button>}
+      {canAct && isWitch && <div className="witch-actions"><p>{witchVictims.length ? <>Người bị Ma sói cắn: <strong>{witchVictims.map(victim => victim.name).join(', ')}</strong></> : <strong>Không có ai chết do Ma sói trong đêm nay.</strong>}</p>{witchVictims.length > 1 && <TargetGrid players={witchVictims} selected={selectedTarget} onSelect={setSelectedTarget} prefix="Chọn để cứu" />}<button className="safe-btn" disabled={!me?.witchPotions?.heal || !healTargetId} onClick={() => onAction(healTargetId, 'heal')}>Dùng bình cứu {me?.witchPotions?.heal ? '' : '· Đã dùng'}</button></div>}
+      {canAct && !isCupidStage && (!isWitch || me?.witchPotions?.poison) && <TargetGrid players={targets} selected={effectiveSelectedTarget} onSelect={isWolfRevenge ? toggleWolfTarget : setSelectedTarget} prefix={isWitch ? 'Đầu độc' : isWolfRevenge ? 'Chọn mục tiêu' : 'Chọn'} maxSelections={isWolfRevenge ? wolfMaxTargets : 1} />}
+      {canAct && isWolfRevenge && <p className="selection-counter">Đã chọn {selectedCount}/{wolfMaxTargets}</p>}
+      {canAct && !isCupidStage && !isWitch && <button className="primary-btn action-confirm" disabled={selectedCount === 0} onClick={() => onAction(effectiveSelectedTarget)}>{isWerewolf ? (isWolfRevenge ? 'Gửi biểu quyết cắn' : 'Bỏ phiếu cắn người này') : 'Xác nhận hành động'}</button>}
       {canAct && isWitch && <button className="danger-btn action-confirm" disabled={!me?.witchPotions?.poison || !selectedTarget} onClick={() => onAction(selectedTarget, 'poison')}>Dùng bình độc {me?.witchPotions?.poison ? '' : '· Đã dùng'}</button>}
       {canAct && !isCupidStage && <button className="text-btn" onClick={onSkip}>Bỏ qua lượt của tôi</button>}
       {state?.isModerator && <ModeratorPanel state={state} onNext={onNextStage} onSkip={onSkipStage} onEndNight={onEndNight} />}
@@ -360,6 +389,7 @@ function ModeratorPanel({ state, onNext, onSkip, onEndNight }) {
       </div>
       <p className="expected-players">Người mang vai: <strong>{(moderator?.expectedPlayers || []).map(player => `${player.name} (${player.alive ? 'còn sống' : 'đã bị loại'})`).join(', ') || 'Không có'}</strong></p>
       {moderator?.noAliveActorMessage && <p className="moderator-dead-role-note">{moderator.noAliveActorMessage}</p>}
+      {moderator?.wolfChildRevenge && <WolfChildRevengeStatus info={moderator.wolfChildRevenge} />}
       {state?.currentNightStage === 'cupid' && <div className="moderator-private-note"><strong>Cặp đôi</strong><p>{moderator?.moderatorLoversInfo ? `Cupid đã ghép đôi: ${moderator.moderatorLoversInfo.names.join(' và ')}.` : 'Đang chờ Cupid chọn Cặp đôi.'}</p></div>}
       {state?.currentNightStage === 'werewolf' && <div className="moderator-private-note"><WerewolfVoteDetails info={moderator?.werewolfNightInfo} /></div>}
       {state?.currentNightStage === 'witch' && <p className="moderator-private-note">Riêng Phù thủy / Quản trò: {moderator?.witchVictimMessage}</p>}
@@ -368,8 +398,20 @@ function ModeratorPanel({ state, onNext, onSkip, onEndNight }) {
   );
 }
 
-function TargetGrid({ players = [], selected, onSelect, prefix, includeBlank = false }) {
-  return <div className="target-grid">{players.map(player => <button className={`target ${selected === player.id ? 'active' : ''}`} key={player.id} onClick={() => onSelect(player.id)}><span className="target-check">{selected === player.id ? '✓' : player.name?.charAt(0)?.toUpperCase()}</span><strong>{player.name}</strong><small>{selected === player.id ? 'Đã chọn' : prefix}</small></button>)}{includeBlank && <button className={`target blank-vote ${selected === BLANK_VOTE ? 'active' : ''}`} onClick={() => onSelect(BLANK_VOTE)}><span className="target-check">{selected === BLANK_VOTE ? '✓' : '—'}</span><strong>Phiếu trắng</strong><small>{selected === BLANK_VOTE ? 'Bạn đã chọn Phiếu trắng' : 'Không treo cổ ai'}</small></button>}</div>;
+function WolfChildRevengeStatus({ info }) {
+  const text = info.active
+    ? 'Đêm nổi giận: Sói được cắn 2 người.'
+    : info.pending
+      ? 'Sói con đã chết. Đêm tới Sói được cắn 2 người.'
+      : info.used
+        ? 'Hiệu ứng Sói con đã dùng.'
+        : 'Hiệu ứng Sói con chưa kích hoạt.';
+  return <div className="moderator-private-note"><strong>Sói con</strong><p>{text}</p></div>;
+}
+
+function TargetGrid({ players = [], selected, onSelect, prefix, includeBlank = false, maxSelections = 1 }) {
+  const selectedIds = Array.isArray(selected) ? selected : selected ? [selected] : [];
+  return <div className="target-grid">{players.map(player => { const active = selectedIds.includes(player.id); return <button className={`target ${active ? 'active' : ''}`} key={player.id} onClick={() => onSelect(player.id)}><span className="target-check">{active ? '✓' : player.name?.charAt(0)?.toUpperCase()}</span><strong>{player.name}</strong><small>{active ? (maxSelections > 1 ? `Đã chọn ${selectedIds.indexOf(player.id) + 1}/${maxSelections}` : 'Đã chọn') : prefix}</small></button>; })}{includeBlank && <button className={`target blank-vote ${selected === BLANK_VOTE ? 'active' : ''}`} onClick={() => onSelect(BLANK_VOTE)}><span className="target-check">{selected === BLANK_VOTE ? '✓' : '—'}</span><strong>Phiếu trắng</strong><small>{selected === BLANK_VOTE ? 'Bạn đã chọn Phiếu trắng' : 'Không treo cổ ai'}</small></button>}</div>;
 }
 
 function DayPanel({ state, onGoVoting }) {
@@ -383,7 +425,8 @@ function VotingPanel({ state, players = [], selectedTarget, setSelectedTarget, h
 }
 
 function WerewolfVoteDetails({ info, currentWolfId }) {
-  return <div className="wolf-vote-status"><strong>Biểu quyết của Ma Sói</strong><div className="wolf-vote-list">{(info?.votes || []).map(vote => <div key={vote.wolfId}><span>{vote.wolfName}{vote.wolfId === currentWolfId ? ' (Bạn)' : ''}</span><small>{vote.left ? 'Đã rời phòng' : !vote.connected ? 'Mất kết nối' : vote.targetName ? `Đã chọn: ${vote.targetName}` : 'Chưa chọn'}</small></div>)}</div><p>Đã có <strong>{info?.votedCount || 0}/{info?.totalAliveWolves || 0}</strong> Sói chọn mục tiêu.</p><p>{info?.isFinalized ? <>Sói đã thống nhất mục tiêu: <strong>{info.finalizedTargetName}</strong></> : 'Sói chưa thống nhất mục tiêu.'}</p></div>;
+  const finalizedNames = info?.finalizedTargetNames?.length ? info.finalizedTargetNames.join(', ') : info?.finalizedTargetName;
+  return <div className="wolf-vote-status"><strong>Biểu quyết của Ma Sói</strong>{info?.isWolfChildRevengeActive && <p className="revenge-note">{info.revengeLabel}</p>}<div className="wolf-vote-list">{(info?.votes || []).map(vote => { const names = vote.targetNames?.length ? vote.targetNames.join(', ') : vote.targetName; return <div key={vote.wolfId}><span>{vote.wolfName}{vote.wolfId === currentWolfId ? ' (Bạn)' : ''}</span><small>{vote.left ? 'Đã rời phòng' : !vote.connected ? 'Mất kết nối' : names ? `Đã chọn: ${names}` : 'Chưa chọn'}</small></div>; })}</div><p>Đã có <strong>{info?.votedCount || 0}/{info?.totalAliveWolves || 0}</strong> Sói gửi biểu quyết.</p><p>{info?.isFinalized ? <>Mục tiêu đã thống nhất: <strong>{finalizedNames}</strong></> : (info?.maxTargets || 1) > 1 ? 'Sói chưa thống nhất đủ mục tiêu.' : 'Sói chưa thống nhất mục tiêu.'}</p></div>;
 }
 
 function HunterShotPanel({ state, players = [], selectedTarget, setSelectedTarget, onShoot, onSkip }) {

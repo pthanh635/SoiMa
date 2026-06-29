@@ -28,6 +28,8 @@ export function createRoom(moderatorSocketId, moderatorName) {
     nightActions: emptyNightActions(),
     pendingHunterShot: null,
     lovers: null,
+    wolfChildRevenge: emptyWolfChildRevenge(),
+    moderatorNotes: [],
     votes: {},
     chat: []
   };
@@ -112,12 +114,25 @@ export function normalizeCode(code) {
 export function emptyNightActions() {
   return {
     werewolfTarget: null,
+    werewolfTargets: [],
     werewolfVotes: {},
     seerTarget: null,
     guardTarget: null,
     witchHealTarget: null,
     witchPoisonTarget: null,
     acted: {}
+  };
+}
+
+export function emptyWolfChildRevenge() {
+  return {
+    pending: false,
+    active: false,
+    used: false,
+    triggeredById: null,
+    triggeredByName: null,
+    triggeredAtRound: null,
+    activeRound: null
   };
 }
 
@@ -132,6 +147,11 @@ function makePlayer(id, name) {
     left: false,
     leftAt: null,
     hasUsedHunterShot: false,
+    hasTriggeredWolfChildRevenge: false,
+    elderLives: 1,
+    originalRole: null,
+    isConvertedWerewolf: false,
+    convertedAtRound: null,
     isLover: false,
     loverPartnerId: null,
     witchPotions: null

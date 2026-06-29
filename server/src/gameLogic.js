@@ -1,4 +1,4 @@
-import { emptyNightActions } from './rooms.js';
+import { emptyNightActions, emptyWolfChildRevenge } from './rooms.js';
 
 function roleMeta(key, labelVi, labelEn, faction, aura, group, isImplemented, isNightRole, description, shortDescription) {
   return { key, labelVi, labelEn, faction, team: faction, aura, group, isImplemented, isNightRole, description, shortDescription };
@@ -22,7 +22,8 @@ export const ROLE_META = {
   drunk: roleMeta('drunk', 'Kẻ say rượu', 'Drunk', 'village', 'Không rõ', 'Không phân loại', false, false, 'Một vai trò đặc biệt, thường gây ra sự hỗn loạn. Có thể nhầm lẫn về hành động của mình, bị quản trò thông báo sai hoặc bị hạn chế khả năng trong vài lượt đầu.', 'Vai gây nhiễu và hỗn loạn, chưa triển khai.'),
   werewolf: roleMeta('werewolf', 'Ma Sói thường', 'Werewolf', 'werewolf', 'Ác', 'Sói cơ bản', true, true, 'Ban đêm cùng đồng bọn chọn một người để giết. Ban ngày giả dạng dân làng và tìm cách thuyết phục, đánh lạc hướng Tiên tri và phe Dân. Đây là lực lượng chính của phe Sói.', 'Ban đêm cùng Sói chọn người để cắn.'),
   alpha_wolf: roleMeta('alpha_wolf', 'Sói đầu đàn', 'Alpha Wolf', 'werewolf', 'Ác', 'Sói đặc biệt', false, true, 'Có quyền quyết định cuối cùng khi phe Sói phân vân về mục tiêu tấn công. Sói đầu đàn thường được Quản trò gọi dậy trước để các Sói khác nhận biết.', 'Sói có quyền quyết định cuối cùng, chưa triển khai.'),
-  wolf_child: roleMeta('wolf_child', 'Sói con', 'Wolf Child', 'werewolf', 'Ác', 'Sói đặc biệt', false, true, 'Khi bị giết, đêm tiếp theo Sói sẽ được cắn hai người thay vì một. Đây là vai trò tạo sự kịch tính, khiến phe Dân phải dè chừng khi xử tử nhầm.', 'Khi chết làm Sói được cắn mạnh hơn, chưa triển khai.'),
+  wolf_child: roleMeta('wolf_child', 'Sói con', 'Wolf Child', 'werewolf', 'Ác', 'Sói đặc biệt', true, true, 'Sói con thuộc phe Ma Sói. Sói con biết các Ma Sói khác và cùng tham gia biểu quyết cắn người. Nếu Sói con chết, đêm kế tiếp phe Ma Sói nổi giận và được cắn tối đa 2 người.', 'Nếu chết, đêm sau Sói được cắn 2 người.'),
+  cursed_villager: roleMeta('cursed_villager', 'Kẻ bị nguyền', 'Cursed Villager', 'village', 'Thiện', 'Dân đặc biệt', true, false, 'Kẻ bị nguyền ban đầu thuộc phe Dân làng. Nếu bị Ma Sói cắn vào ban đêm, người này không chết mà bị biến thành Ma Sói từ đêm sau.', 'Bị Sói cắn thì hóa thành Sói thay vì chết.'),
   cursed_wolf: roleMeta('cursed_wolf', 'Sói nguyền / Kẻ bị nguyền', 'Cursed Wolf', 'werewolf', 'Ác', 'Sói biến thể', false, true, 'Ban đầu mang danh nghĩa dân làng, nhưng nếu bị Sói cắn sẽ lập tức trở thành Ma Sói và gia nhập phe Sói. Đây là vai trò hai mặt, dễ gây rối loạn niềm tin trong phe Dân.', 'Bị Sói cắn sẽ biến thành Sói, chưa triển khai.'),
   wolf_witch: roleMeta('wolf_witch', 'Sói phù thủy', 'Wolf Witch', 'werewolf', 'Ác', 'Sói nâng cao', false, true, 'Ngoài khả năng cắn cùng Sói, còn có thể sử dụng ma thuật để gây nhiễu, ví dụ làm người khác mất khả năng trong một đêm.', 'Sói có phép gây nhiễu ban đêm, chưa triển khai.'),
   wolf_converter: roleMeta('wolf_converter', 'Sói hóa sói', 'Wolf Converter', 'werewolf', 'Ác', 'Sói nâng cao', false, true, 'Có thể hóa sói một dân làng khác để biến họ thành đồng minh. Vai trò này rất mạnh nếu xuất hiện trong nhóm đông người.', 'Có thể biến người khác thành Sói, chưa triển khai.'),
@@ -34,7 +35,7 @@ export const ROLE_META = {
   witch: roleMeta('witch', 'Phù thủy', 'Witch', 'village', 'Trung lập', 'Solo cân bằng', true, true, 'Có hai bình thuốc: một bình cứu người bị Sói cắn và một bình giết một người bất kỳ. Có thể dùng cả hai trong cùng một đêm hoặc để dành. Đây là vai trò rất mạnh, vừa giúp phe Dân vừa có thể gây bất ngờ cho phe Sói.', 'Có một bình cứu và một bình độc.'),
   piper: roleMeta('piper', 'Kẻ thổi sáo', 'Piper', 'solo', 'Trung lập', 'Solo khống chế', false, true, 'Mỗi đêm được chọn hai người để ru ngủ hoặc mê hoặc. Khi tất cả người chơi còn sống đều bị mê hoặc, Kẻ thổi sáo lập tức thắng. Đây là vai trò khó chơi nhưng rất thú vị khi kéo dài trận.', 'Mê hoặc người chơi để đạt điều kiện thắng riêng, chưa triển khai.'),
   thief: roleMeta('thief', 'Kẻ ăn trộm', 'Thief', 'solo', 'Trung lập', 'Solo thay vai', false, true, 'Ban đầu nhận hai lá bài úp của những người không tham gia. Trước khi game bắt đầu, Kẻ ăn trộm phải chọn một trong hai lá để hóa thân thành vai trò đó. Tùy chọn bài mà có thể thành Dân, Sói hoặc một vai Solo khác.', 'Chọn một trong hai lá bài úp để đổi vai, chưa triển khai.'),
-  elder: roleMeta('elder', 'Già làng', 'Elder', 'solo', 'Trung lập', 'Solo trụ cột', false, false, 'Sở hữu khả năng đặc biệt: cần bị giết hai lần mới chết, trừ khi bị Sói cắn cộng với trúng thuốc độc của Phù thủy trong cùng một đêm. Già làng giúp tăng độ bền cho phe Dân, nhưng cũng có thể khiến phe Sói nản.', 'Cần bị giết hai lần mới chết, chưa triển khai.'),
+  elder: roleMeta('elder', 'Già làng', 'Elder', 'village', 'Thiện', 'Dân đặc biệt', true, false, 'Già làng có sức sống mạnh hơn dân thường. Lần đầu bị Ma Sói cắn, Già làng không chết mà mất đi một mạng. Nếu bị treo cổ, bị Phù thủy đầu độc, hoặc bị Thợ săn bắn thì Già làng vẫn chết bình thường.', 'Sống sót sau lần đầu bị Ma Sói cắn.'),
   white_wolf: roleMeta('white_wolf', 'Người sói trắng', 'White Wolf', 'solo', 'Ác', 'Solo phản bội', false, true, 'Mỗi đêm cùng dậy với Sói, nhưng cách đêm lại được quyền giết thêm một Sói khác. Người Sói trắng chiến thắng khi là người sống sót cuối cùng. Đây là vai phản bội nguy hiểm, vừa giả dạng đồng minh, vừa ngấm ngầm triệt hạ cả hai phe.', 'Sói phản bội có mục tiêu thắng riêng, chưa triển khai.'),
   shapeshifter_wolf: roleMeta('shapeshifter_wolf', 'Người sói hóa hình', 'Shapeshifter Wolf', 'solo', 'Trung lập', 'Solo đặc biệt', false, true, 'Có thể giả dạng một người chết bất kỳ để đánh lạc hướng phe Dân. Nếu chơi bản nâng cao, có thể cướp thân phận và thay thế hoàn toàn người đã chết.', 'Giả dạng hoặc cướp thân phận người chết, chưa triển khai.'),
   dreamer: roleMeta('dreamer', 'Kẻ báo mộng', 'Dreamer', 'solo', 'Trung lập', 'Solo huyền bí', false, true, 'Mỗi đêm có thể gieo một giấc mơ vào người chơi, khiến họ hành động nhầm lẫn vào ngày hôm sau. Đây là vai ít phổ biến nhưng mang tính giải trí cao.', 'Gieo giấc mơ gây nhầm lẫn, chưa triển khai.'),
@@ -59,7 +60,7 @@ export const TEAM_LABEL = {
 
 export const NIGHT_STAGES = [
   { key: 'cupid', labelVi: 'Thần tình yêu', roles: ['cupid'], moderatorPrompt: 'Gọi Thần tình yêu thức dậy và chọn hai người để ghép đôi.', playerPrompt: 'Chọn đúng 2 người chơi để ghép thành Cặp đôi.', isImplemented: true, canSkipIfNoRole: true, firstNightOnly: true },
-  { key: 'wolf_special', labelVi: 'Sói đặc biệt', roles: ['wolf_child', 'alpha_wolf'], moderatorPrompt: 'Gọi các vai Sói đặc biệt trước. Chưa triển khai vai này.', playerPrompt: 'Chờ Quản trò điều phối.', isImplemented: false, canSkipIfNoRole: true },
+  { key: 'wolf_special', labelVi: 'Sói đặc biệt', roles: ['alpha_wolf'], moderatorPrompt: 'Gọi các vai Sói đặc biệt trước. Chưa triển khai vai này.', playerPrompt: 'Chờ Quản trò điều phối.', isImplemented: false, canSkipIfNoRole: true },
   { key: 'werewolf', labelVi: 'Sói', roles: ['werewolf'], moderatorPrompt: 'Gọi Sói thức dậy và chọn một người để cắn.', playerPrompt: 'Chọn một người để cắn.', isImplemented: true, canSkipIfNoRole: true },
   { key: 'guard', labelVi: 'Bảo vệ', roles: ['guard'], moderatorPrompt: 'Gọi Bảo vệ thức dậy và chọn một người để bảo vệ.', playerPrompt: 'Chọn một người để bảo vệ.', isImplemented: true, canSkipIfNoRole: true },
   { key: 'witch', labelVi: 'Phù thủy', roles: ['witch'], moderatorPrompt: 'Gọi Phù thủy thức dậy. Nếu có người bị cắn, thông báo riêng cho Phù thủy.', playerPrompt: 'Cân nhắc dùng bình cứu hoặc bình độc.', isImplemented: true, canSkipIfNoRole: true },
@@ -93,9 +94,9 @@ const ROLE_PRESETS = {
   14: { seer: 1, guard: 1, hunter: 1, cupid: 1, witch: 1, werewolf: 3, villager: 5, traitor: 1 },
   15: { seer: 1, guard: 1, hunter: 1, cupid: 1, witch: 1, werewolf: 4, villager: 6 },
   16: { seer: 1, guard: 1, hunter: 1, cupid: 1, witch: 1, elder: 1, werewolf: 4, villager: 6 },
-  '17A': { seer: 1, guard: 1, hunter: 1, cupid: 1, witch: 1, elder: 1, piper: 1, werewolf: 4, villager: 6 },
-  '17B': { seer: 1, guard: 1, hunter: 1, cupid: 1, witch: 1, elder: 1, piper: 1, thief: 1, werewolf: 4, villager: 5 },
-  18: { seer: 1, guard: 1, hunter: 1, cupid: 1, witch: 1, elder: 1, piper: 1, thief: 1, werewolf: 4, villager: 6 }
+  '17A': { seer: 1, guard: 1, hunter: 1, cupid: 1, witch: 1, elder: 1, cursed_villager: 1, wolf_child: 1, werewolf: 3, villager: 6 },
+  '17B': { seer: 1, guard: 1, hunter: 1, cupid: 1, witch: 1, elder: 1, cursed_villager: 1, wolf_child: 1, werewolf: 3, villager: 6 },
+  18: { seer: 1, guard: 1, hunter: 1, cupid: 1, witch: 1, elder: 1, cursed_villager: 1, wolf_child: 1, werewolf: 3, villager: 7 }
 };
 
 export function getSuggestedRolePreset(playerCount, variant = 'A') {
@@ -124,11 +125,16 @@ export function startGame(room) {
   room.players.forEach((player, index) => {
     player.role = roles[index];
     player.team = ROLE_META[player.role]?.team || 'village';
+    player.originalRole = player.role;
     player.alive = true;
     player.connected = true;
     player.left = false;
     player.leftAt = null;
     player.hasUsedHunterShot = false;
+    player.hasTriggeredWolfChildRevenge = false;
+    player.elderLives = player.role === 'elder' ? 2 : 1;
+    player.isConvertedWerewolf = false;
+    player.convertedAtRound = null;
     player.isLover = false;
     player.loverPartnerId = null;
     player.witchPotions = player.role === 'witch'
@@ -138,6 +144,8 @@ export function startGame(room) {
 
   room.status = 'playing';
   room.lovers = null;
+  room.wolfChildRevenge = emptyWolfChildRevenge();
+  room.moderatorNotes = [];
   room.round = 1;
   room.votes = {};
   room.chat = [];
@@ -150,7 +158,8 @@ export function doNightAction(room, actorId, targetId, action, targetIds) {
 
   const stage = currentStage(room);
   if (!stage) throw new Error('Đêm đã xử lý xong.');
-  if (!stage.isImplemented || !stage.roles.includes(actor.role)) {
+  const isActingWerewolf = stage.key === 'werewolf' && isWerewolfTeam(actor);
+  if (!stage.isImplemented || (!stage.roles.includes(actor.role) && !isActingWerewolf)) {
     throw new Error(`Chưa tới lượt ${ROLE_LABEL[actor.role] || 'vai của bạn'}. Hiện tại Quản trò đang gọi ${stage.labelVi}.`);
   }
   if (actor.connected === false || actor.left) throw new Error('Người chơi đã rời phòng hoặc mất kết nối.');
@@ -163,23 +172,27 @@ export function doNightAction(room, actorId, targetId, action, targetIds) {
     return doWitchAction(room, actor, targetId, action);
   }
 
-  if (actor.role !== 'werewolf' && room.nightActions.acted[actor.role]) {
+  if (!isActingWerewolf && room.nightActions.acted[actor.role]) {
     throw new Error(`${ROLE_LABEL[actor.role]} đã hành động trong đêm này rồi.`);
   }
 
-  const target = findAlivePlayer(room, targetId);
-
-  if (actor.role === 'werewolf') {
-    if (target.team === 'werewolf') throw new Error('Ma Sói không thể cắn đồng đội.');
-    room.nightActions.werewolfVotes[actor.id] = target.id;
+  if (isActingWerewolf) {
+    const selectedIds = normalizeWerewolfTargetIds(targetId, targetIds, getWerewolfMaxTargets(room));
+    const selectedTargets = selectedIds.map(id => findAlivePlayer(room, id));
+    selectedTargets.forEach(target => {
+      if (isWerewolfTeam(target)) throw new Error('Ma Sói không thể cắn đồng đội.');
+    });
+    room.nightActions.werewolfVotes[actor.id] = { targetIds: selectedTargets.map(target => target.id) };
     const summary = refreshWerewolfTarget(room);
     return {
       type: 'werewolf',
-      message: summary.finalTarget
-        ? `Sói đã thống nhất mục tiêu: ${summary.finalTarget.name}.`
+      message: summary.finalTargets.length
+        ? `Sói đã thống nhất mục tiêu: ${summary.finalTargets.map(target => target.name).join(', ')}.`
         : 'Bạn đã chọn mục tiêu. Sói chưa thống nhất mục tiêu.'
     };
   }
+
+  const target = findAlivePlayer(room, targetId);
 
   if (actor.role === 'guard') {
     room.nightActions.guardTarget = target.id;
@@ -194,7 +207,7 @@ export function doNightAction(room, actorId, targetId, action, targetIds) {
     completeCurrentStage(room);
     return {
       type: 'seer',
-      message: `${target.name} thuộc ${TEAM_LABEL[target.team]}.`
+      message: `${target.name} thuộc ${TEAM_LABEL[isWerewolfTeam(target) ? 'werewolf' : 'village']}.`
     };
   }
 
@@ -207,12 +220,12 @@ export function skipNightTurn(room, actorId) {
 
   const actor = room.players.find(p => p.id === actorId);
   const stage = currentStage(room);
-  const isCurrentRole = actor?.alive && actor.connected !== false && !actor.left && stage?.roles.includes(actor.role);
+  const isCurrentRole = actor?.alive && actor.connected !== false && !actor.left && playerMatchesStage(actor, stage);
 
   if (!isCurrentRole) {
     throw new Error('Chỉ người chơi đang tới lượt mới được bỏ qua lượt hiện tại.');
   }
-  if (actor.role === 'werewolf') throw new Error('Ma Sói hãy bỏ phiếu mục tiêu hoặc chờ Quản trò bỏ qua lượt.');
+  if (isWerewolfTeam(actor)) throw new Error('Ma Sói hãy bỏ phiếu mục tiêu hoặc chờ Quản trò bỏ qua lượt.');
 
   completeCurrentStage(room);
   return { type: 'skip', message: `Đã hoàn tất lượt ${stage.labelVi}.` };
@@ -256,8 +269,10 @@ function doWitchAction(room, actor, targetId, action) {
   }
 
   if (action === 'heal') {
-    const wolfTargetId = getEffectiveWolfVictim(room)?.id;
-    if (!wolfTargetId) throw new Error('Đêm nay không có ai đang chết vì Ma sói.');
+    const wolfVictims = getEffectiveWolfVictims(room);
+    const wolfTargetId = targetId || (wolfVictims.length === 1 ? wolfVictims[0].id : null);
+    if (!wolfVictims.length) throw new Error('Đêm nay không có ai đang chết vì Ma sói.');
+    if (!wolfTargetId || !wolfVictims.some(victim => victim.id === wolfTargetId)) throw new Error('Hãy chọn một nạn nhân bị Ma Sói cắn để cứu.');
     const target = findAlivePlayer(room, wolfTargetId);
     if (room.nightActions.witchPoisonTarget === target.id) {
       throw new Error('Không thể vừa cứu vừa độc cùng một người trong một đêm.');
@@ -284,29 +299,49 @@ function doWitchAction(room, actor, targetId, action) {
 export function endNight(room) {
   ensurePhase(room, 'night');
 
-  const wolfTargetId = room.nightActions.werewolfTarget;
+  const wolfTargetIds = getFinalWerewolfTargetIds(room);
+  const wolfTargetId = wolfTargetIds[0] || null;
   const guardTargetId = room.nightActions.guardTarget;
   const healTargetId = room.nightActions.witchHealTarget;
   const poisonTargetId = room.nightActions.witchPoisonTarget;
   const deaths = new Set();
 
-  if (!wolfTargetId) {
+  if (!wolfTargetIds.length) {
     room.resultMessage = 'Đêm qua không có ai bị ma sói cắn.';
-  } else if (wolfTargetId === guardTargetId || wolfTargetId === healTargetId) {
-    room.resultMessage = 'Không ai chết vì Ma sói trong đêm qua.';
   } else {
-    const victim = room.players.find(p => p.id === wolfTargetId && p.alive);
-    if (victim) deaths.add(victim.id);
+    let biteHadEffect = false;
+    for (const target of wolfTargetIds) {
+      if (target === guardTargetId || target === healTargetId) continue;
+      const victim = room.players.find(p => p.id === target && p.alive);
+      if (!victim) continue;
+      biteHadEffect = true;
+      const poisonAlsoKillsVictim = poisonTargetId === target;
+      if (!poisonAlsoKillsVictim && victim.role === 'elder' && (victim.elderLives || 1) > 1) {
+        victim.elderLives -= 1;
+        addModeratorNote(room, 'Già làng đã mất một mạng vì bị Ma Sói cắn.');
+      } else if (!poisonAlsoKillsVictim && victim.role === 'cursed_villager' && !victim.isConvertedWerewolf) {
+        convertCursedVillager(room, victim);
+        addModeratorNote(room, 'Kẻ bị nguyền đã hóa thành Ma Sói.');
+      } else {
+        deaths.add(victim.id);
+      }
+    }
+    if (!biteHadEffect) room.resultMessage = 'Không ai chết vì Ma sói trong đêm qua.';
+    else room.resultMessage = 'Đêm qua không có ai chết.';
   }
 
   if (poisonTargetId) deaths.add(poisonTargetId);
 
   const { victims, heartbreakVictims } = applyDeaths(room, [...deaths]);
+  const wolfChildMessage = triggerWolfChildRevenge(room, victims);
 
   if (victims.length > 0) {
     room.resultMessage = `Sáng nay, ${victims.map(p => p.name).join(' và ')} đã chết.`;
     if (heartbreakVictims.length) room.resultMessage += ` ${heartbreakVictims.map(player => `${player.name} cũng chết vì đau khổ.`).join(' ')}`;
   }
+  if (wolfChildMessage) room.resultMessage += ` ${wolfChildMessage}`;
+
+  finishWolfChildRevengeNight(room);
 
   room.currentNightStage = null;
   room.currentNightStageIndex = -1;
@@ -318,7 +353,7 @@ export function endNight(room) {
 
   const deadHunter = victims.find(player => player.role === 'hunter' && !player.hasUsedHunterShot);
   if (deadHunter) {
-    const killedByWolves = wolfTargetId === deadHunter.id && wolfTargetId !== guardTargetId && wolfTargetId !== healTargetId;
+    const killedByWolves = wolfTargetIds.includes(deadHunter.id) && deadHunter.id !== guardTargetId && deadHunter.id !== healTargetId;
     const cause = heartbreakVictims.some(player => player.id === deadHunter.id)
       ? 'heartbreak'
       : poisonTargetId === deadHunter.id && !killedByWolves ? 'poison' : 'night';
@@ -373,6 +408,8 @@ export function endVote(room) {
       deathResult = applyDeaths(room, [eliminated.id]);
       room.resultMessage = `${eliminated.name} bị treo cổ.`;
       if (deathResult.heartbreakVictims.length) room.resultMessage += ` ${deathResult.heartbreakVictims.map(player => `${player.name} cũng chết vì đau khổ.`).join(' ')}`;
+      const wolfChildMessage = triggerWolfChildRevenge(room, deathResult.victims);
+      if (wolfChildMessage) room.resultMessage += ` ${wolfChildMessage}`;
     }
   }
 
@@ -402,7 +439,7 @@ function doCupidAction(room, actor, targetIds) {
     playerIds: [first.id, second.id],
     createdBy: actor.id,
     createdAt: Date.now(),
-    mixedFaction: (first.team === 'werewolf') !== (second.team === 'werewolf')
+    mixedFaction: isWerewolfTeam(first) !== isWerewolfTeam(second)
   };
   first.isLover = true;
   first.loverPartnerId = second.id;
@@ -414,24 +451,32 @@ function doCupidAction(room, actor, targetIds) {
 }
 
 export function refreshWerewolfTarget(room) {
-  const eligibleWolves = room.players.filter(player => player.alive && player.role === 'werewolf' && player.connected !== false && !player.left);
+  const eligibleWolves = room.players.filter(player => player.alive && isWerewolfTeam(player) && player.connected !== false && !player.left);
   const eligibleIds = new Set(eligibleWolves.map(player => player.id));
+  const maxTargets = getWerewolfMaxTargets(room);
   const validVotes = {};
 
-  for (const [wolfId, targetId] of Object.entries(room.nightActions.werewolfVotes || {})) {
-    const target = room.players.find(player => player.id === targetId && player.alive && player.role !== 'werewolf');
-    if (eligibleIds.has(wolfId) && target) validVotes[wolfId] = targetId;
+  for (const [wolfId, vote] of Object.entries(room.nightActions.werewolfVotes || {})) {
+    if (!eligibleIds.has(wolfId)) continue;
+    const candidateIds = Array.isArray(vote?.targetIds) ? vote.targetIds : vote ? [vote] : [];
+    const targetIds = unique(candidateIds).filter(targetId => room.players.some(player => player.id === targetId && player.alive && !isWerewolfTeam(player))).slice(0, maxTargets);
+    if (targetIds.length) validVotes[wolfId] = { targetIds };
   }
   room.nightActions.werewolfVotes = validVotes;
 
-  const counts = Object.values(validVotes).reduce((result, targetId) => {
-    result[targetId] = (result[targetId] || 0) + 1;
+  const counts = Object.values(validVotes).reduce((result, vote) => {
+    vote.targetIds.forEach(targetId => { result[targetId] = (result[targetId] || 0) + 1; });
     return result;
   }, {});
-  const winner = Object.entries(counts).find(([, count]) => count > eligibleWolves.length / 2);
-  room.nightActions.werewolfTarget = winner?.[0] || null;
-  const finalTarget = room.players.find(player => player.id === room.nightActions.werewolfTarget) || null;
-  return { eligibleWolves, votedCount: Object.keys(validVotes).length, finalTarget };
+  const winners = Object.entries(counts)
+    .filter(([, count]) => count > eligibleWolves.length / 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, maxTargets)
+    .map(([targetId]) => targetId);
+  room.nightActions.werewolfTargets = winners;
+  room.nightActions.werewolfTarget = winners[0] || null;
+  const finalTargets = winners.map(targetId => room.players.find(player => player.id === targetId)).filter(Boolean);
+  return { eligibleWolves, votedCount: Object.keys(validVotes).length, finalTargets, finalTarget: finalTargets[0] || null, maxTargets };
 }
 
 export function hunterShot(room, actorId, targetId) {
@@ -447,9 +492,11 @@ export function hunterShot(room, actorId, targetId) {
 
   hunter.hasUsedHunterShot = true;
   const deathResult = applyDeaths(room, [target.id]);
+  const wolfChildMessage = triggerWolfChildRevenge(room, deathResult.victims);
   room.pendingHunterShot = null;
   room.resultMessage = `Thợ săn đã bắn ${target.name}.`;
   if (deathResult.heartbreakVictims.length) room.resultMessage += ` ${deathResult.heartbreakVictims.map(player => `${player.name} cũng chết vì đau khổ.`).join(' ')}`;
+  if (wolfChildMessage) room.resultMessage += ` ${wolfChildMessage}`;
   const nextHunter = deathResult.victims.find(player => player.role === 'hunter' && !player.hasUsedHunterShot);
   if (nextHunter && queueHunterShot(room, nextHunter, deathResult.heartbreakVictims.some(player => player.id === nextHunter.id) ? 'heartbreak' : 'hunter_shot', pending.phaseAfterShot)) {
     return { message: `Bạn đã bắn ${target.name}.` };
@@ -511,8 +558,8 @@ export function applyDeaths(room, playerIds) {
 
 export function checkWin(players, lovers = null) {
   const alive = players.filter(p => p.alive);
-  const wolves = alive.filter(p => p.team === 'werewolf');
-  const villagers = alive.filter(p => p.team === 'village');
+  const wolves = alive.filter(isWerewolfTeam);
+  const villagers = alive.filter(p => !isWerewolfTeam(p));
   const livingLovers = lovers?.playerIds?.filter(id => alive.some(player => player.id === id)) || [];
 
   if (livingLovers.length === 2 && alive.length === 2) return 'lovers';
@@ -566,7 +613,7 @@ export function publicStateFor(room, socketId) {
         ? { ...room.pendingHunterShot, isMine: me?.id === room.pendingHunterShot.hunterId }
         : { active: true })
       : null,
-    ...(me?.role === 'werewolf' && stage?.key === 'werewolf' ? {
+    ...(isWerewolfTeam(me) && stage?.key === 'werewolf' ? {
       werewolfNightInfo: serializeWerewolfNightInfo(room, wolfVoteSummary, me.id)
     } : {}),
     ...(loverPartner ? {
@@ -589,7 +636,7 @@ export function publicStateFor(room, socketId) {
     currentNightStage: room.currentNightStage,
     currentNightStageIndex: room.currentNightStageIndex,
     currentNightStageLabel: stage?.labelVi || null,
-    isMyNightTurn: Boolean(me?.alive && me.connected !== false && !me.left && stage?.isImplemented && stage.roles.includes(me.role) && !room.completedNightStages.includes(stage.key)),
+    isMyNightTurn: Boolean(me?.alive && me.connected !== false && !me.left && stage?.isImplemented && playerMatchesStage(me, stage) && !room.completedNightStages.includes(stage.key)),
     activeNightStages: isModerator ? [...room.activeNightStages] : null,
     nightOrder: isModerator ? room.activeNightStages.map(key => getStageByKey(key)).filter(Boolean).map(item => ({ key: item.key, role: item.key, label: item.labelVi, isImplemented: item.isImplemented })) : [],
     moderator: isModerator ? {
@@ -600,15 +647,17 @@ export function publicStateFor(room, socketId) {
       assignedRoleCounts: { ...room.assignedRoleCounts },
       stages: room.activeNightStages.map(key => getStageByKey(key)).filter(Boolean).map(item => ({ ...item, completed: room.completedNightStages.includes(item.key) })),
       prompt: stage?.moderatorPrompt || null,
-      expectedPlayers: room.players.filter(p => stage?.roles.includes(p.role)).map(p => ({ id: p.id, name: p.name, role: p.role, roleLabel: ROLE_LABEL[p.role], alive: p.alive })),
-      hasAliveActor: room.players.some(p => p.alive && p.connected !== false && !p.left && stage?.roles.includes(p.role)),
-      noAliveActorMessage: stage && !room.players.some(p => p.alive && p.connected !== false && !p.left && stage.roles.includes(p.role))
+      expectedPlayers: room.players.filter(p => playerMatchesStage(p, stage)).map(p => ({ id: p.id, name: p.name, role: p.role, roleLabel: ROLE_LABEL[p.role], alive: p.alive })),
+      hasAliveActor: room.players.some(p => p.alive && p.connected !== false && !p.left && playerMatchesStage(p, stage)),
+      noAliveActorMessage: stage && !room.players.some(p => p.alive && p.connected !== false && !p.left && playerMatchesStage(p, stage))
         ? 'Vai này có trong ván nhưng không còn người sống để hành động. Vẫn gọi lượt này để giữ bí mật.'
         : null,
       nightActions: { ...room.nightActions, werewolfVotes: { ...room.nightActions.werewolfVotes } },
       werewolfVoteStatus: stage?.key === 'werewolf' ? serializeWerewolfVoteStatus(room, wolfVoteSummary, true) : null,
       werewolfNightInfo: stage?.key === 'werewolf' ? serializeWerewolfNightInfo(room, wolfVoteSummary) : null,
+      wolfChildRevenge: serializeWolfChildRevenge(room),
       moderatorLoversInfo: serializeModeratorLoversInfo(room),
+      moderatorNotes: [...(room.moderatorNotes || [])],
       witchVictimMessage: effectiveWolfVictim ? `Người bị Ma sói cắn: ${effectiveWolfVictim.name}` : 'Không có ai chết do Ma sói trong đêm nay.'
     } : null,
     me: me ? {
@@ -622,15 +671,23 @@ export function publicStateFor(room, socketId) {
       connected: me.connected !== false,
       left: Boolean(me.left),
       hasUsedHunterShot: me.hasUsedHunterShot,
+      elderLives: me.role === 'elder' ? me.elderLives : null,
+      elderMaxLives: me.role === 'elder' ? 2 : null,
+      originalRole: me.originalRole,
+      isConvertedWerewolf: Boolean(me.isConvertedWerewolf),
+      convertedAtRound: me.convertedAtRound,
       isModerator: false,
       witchPotions: me.role === 'witch' ? me.witchPotions : null,
       witchVictim: me.role === 'witch' && room.currentNightStage === 'witch'
         ? effectiveWolfVictim?.id || null
         : null,
-      ...(me.role === 'werewolf' ? {
-        werewolfTeammates: room.players.filter(player => player.role === 'werewolf' && player.id !== me.id).map(publicPlayerStatus)
+      witchVictims: me.role === 'witch' && room.currentNightStage === 'witch'
+        ? getEffectiveWolfVictims(room).map(publicPlayerStatus)
+        : [],
+      ...(isWerewolfTeam(me) ? {
+        werewolfTeammates: room.players.filter(player => isWerewolfTeam(player) && player.id !== me.id).map(publicPlayerStatus)
       } : {}),
-      ...(me.role === 'werewolf' && stage?.key === 'werewolf' ? {
+      ...(isWerewolfTeam(me) && stage?.key === 'werewolf' ? {
         werewolfVote: room.nightActions.werewolfVotes?.[me.id] || null,
         werewolfVoteStatus: serializeWerewolfVoteStatus(room, wolfVoteSummary, false)
       } : {})
@@ -645,7 +702,9 @@ export function publicStateFor(room, socketId) {
       role: showAllRoles || isModerator || p.id === socketId ? p.role : null,
       roleLabel: showAllRoles || isModerator || p.id === socketId ? ROLE_LABEL[p.role] : null,
       team: showAllRoles || isModerator || p.id === socketId ? p.team : null,
-      teamLabel: showAllRoles || isModerator || p.id === socketId ? TEAM_LABEL[p.team] : null
+      teamLabel: showAllRoles || isModerator || p.id === socketId ? TEAM_LABEL[p.team] : null,
+      elderLives: showAllRoles || isModerator || p.id === socketId ? p.elderLives : null,
+      isConvertedWerewolf: showAllRoles || isModerator || p.id === socketId ? Boolean(p.isConvertedWerewolf) : false
     }))
   };
 }
@@ -656,6 +715,7 @@ function beginNight(room, message) {
     .filter(key => room.round === 1 || !getStageByKey(key)?.firstNightOnly);
   room.votes = {};
   room.nightActions = emptyNightActions();
+  maybeActivateWolfChildRevenge(room);
   room.currentNightStage = null;
   room.currentNightStageIndex = -1;
   room.completedNightStages = [];
@@ -684,8 +744,10 @@ function serializeWerewolfVoteStatus(room, summary, includeVoters) {
   const status = {
     votedCount: summary.votedCount,
     eligibleCount: summary.eligibleWolves.length,
+    maxTargets: summary.maxTargets,
     finalTarget: summary.finalTarget ? { id: summary.finalTarget.id, name: summary.finalTarget.name } : null,
-    resolved: Boolean(summary.finalTarget)
+    finalTargets: summary.finalTargets.map(target => ({ id: target.id, name: target.name })),
+    resolved: summary.finalTargets.length > 0
   };
   if (includeVoters) {
     status.voters = summary.eligibleWolves.map(wolf => ({ ...publicPlayerStatus(wolf), hasVoted: Boolean(room.nightActions.werewolfVotes?.[wolf.id]) }));
@@ -694,18 +756,21 @@ function serializeWerewolfVoteStatus(room, summary, includeVoters) {
 }
 
 function serializeWerewolfNightInfo(room, summary, viewerWolfId = null) {
-  const wolves = room.players.filter(player => player.role === 'werewolf');
+  const wolves = room.players.filter(isWerewolfTeam);
   const votes = wolves.filter(player => player.alive).map(wolf => {
-    const targetId = room.nightActions.werewolfVotes?.[wolf.id] || null;
-    const target = targetId ? room.players.find(player => player.id === targetId) : null;
+    const vote = room.nightActions.werewolfVotes?.[wolf.id];
+    const targetIds = Array.isArray(vote?.targetIds) ? vote.targetIds : vote ? [vote] : [];
+    const targets = targetIds.map(targetId => room.players.find(player => player.id === targetId)).filter(Boolean);
     return {
       wolfId: wolf.id,
       wolfName: wolf.name,
       alive: wolf.alive,
       connected: wolf.connected !== false,
       left: Boolean(wolf.left),
-      targetId,
-      targetName: target?.name || null
+      targetId: targetIds[0] || null,
+      targetName: targets[0]?.name || null,
+      targetIds,
+      targetNames: targets.map(target => target.name)
     };
   });
   return {
@@ -713,10 +778,105 @@ function serializeWerewolfNightInfo(room, summary, viewerWolfId = null) {
     votes,
     votedCount: summary.votedCount,
     totalAliveWolves: summary.eligibleWolves.length,
+    maxTargets: summary.maxTargets,
+    isWolfChildRevengeActive: Boolean(room.wolfChildRevenge?.active),
+    revengeLabel: room.wolfChildRevenge?.active ? 'Sói con đã chết, phe Sói được cắn 2 người trong đêm nay.' : null,
     finalizedTargetId: summary.finalTarget?.id || null,
     finalizedTargetName: summary.finalTarget?.name || null,
-    isFinalized: Boolean(summary.finalTarget)
+    finalizedTargetIds: summary.finalTargets.map(target => target.id),
+    finalizedTargetNames: summary.finalTargets.map(target => target.name),
+    isFinalized: summary.finalTargets.length > 0
   };
+}
+
+export function isWerewolfTeam(player) {
+  return Boolean(player && (player.role === 'werewolf' || player.team === 'werewolf' || player.isConvertedWerewolf));
+}
+
+function playerMatchesStage(player, stage) {
+  if (!stage) return false;
+  return stage.roles.includes(player.role) || (stage.key === 'werewolf' && isWerewolfTeam(player));
+}
+
+function serializeWolfChildRevenge(room) {
+  const state = room.wolfChildRevenge || emptyWolfChildRevenge();
+  return { ...state, maxTargets: getWerewolfMaxTargets(room) };
+}
+
+function normalizeWerewolfTargetIds(targetId, targetIds, maxTargets) {
+  const ids = Array.isArray(targetIds) ? targetIds : targetId ? [targetId] : [];
+  const selected = unique(ids).slice(0, maxTargets);
+  if (!selected.length) throw new Error('Ma Sói hãy chọn ít nhất một mục tiêu.');
+  return selected;
+}
+
+function unique(items) {
+  return [...new Set(items.filter(Boolean))];
+}
+
+function getWerewolfMaxTargets(room) {
+  return room.wolfChildRevenge?.active && !room.wolfChildRevenge?.used ? 2 : 1;
+}
+
+function getFinalWerewolfTargetIds(room) {
+  const targets = Array.isArray(room.nightActions.werewolfTargets) ? room.nightActions.werewolfTargets : [];
+  return targets.length ? targets : room.nightActions.werewolfTarget ? [room.nightActions.werewolfTarget] : [];
+}
+
+function getEffectiveWolfVictims(room) {
+  return getFinalWerewolfTargetIds(room)
+    .filter(targetId => targetId !== room.nightActions.guardTarget)
+    .map(targetId => room.players.find(player => player.id === targetId && player.alive))
+    .filter(Boolean);
+}
+
+function maybeActivateWolfChildRevenge(room) {
+  if (room.wolfChildRevenge?.pending && !room.wolfChildRevenge.used) {
+    room.wolfChildRevenge.pending = false;
+    room.wolfChildRevenge.active = true;
+    room.wolfChildRevenge.activeRound = room.round;
+  }
+}
+
+function finishWolfChildRevengeNight(room) {
+  if (!room.wolfChildRevenge?.active) return;
+  room.wolfChildRevenge.active = false;
+  room.wolfChildRevenge.pending = false;
+  room.wolfChildRevenge.used = true;
+}
+
+function triggerWolfChildRevenge(room, victims) {
+  const wolfChild = victims.find(player => player.role === 'wolf_child' && !player.hasTriggeredWolfChildRevenge);
+  if (!wolfChild || room.wolfChildRevenge?.used) return '';
+  wolfChild.hasTriggeredWolfChildRevenge = true;
+  room.wolfChildRevenge = {
+    ...(room.wolfChildRevenge || emptyWolfChildRevenge()),
+    pending: true,
+    active: false,
+    used: false,
+    triggeredById: wolfChild.id,
+    triggeredByName: wolfChild.name,
+    triggeredAtRound: room.round,
+    activeRound: null
+  };
+  return 'Sói con đã chết. Đêm tới Ma Sói sẽ nổi giận.';
+}
+
+function convertCursedVillager(room, player) {
+  player.team = 'werewolf';
+  player.isConvertedWerewolf = true;
+  player.convertedAtRound = room.round;
+  refreshLoverFaction(room);
+}
+
+function addModeratorNote(room, message) {
+  room.moderatorNotes = [...(room.moderatorNotes || []), { id: `${Date.now()}-${room.moderatorNotes?.length || 0}`, round: room.round, message }].slice(-12);
+}
+
+function refreshLoverFaction(room) {
+  if (!room.lovers?.playerIds?.length) return;
+  const lovers = room.lovers.playerIds.map(id => room.players.find(player => player.id === id)).filter(Boolean);
+  if (lovers.length === 2) room.lovers.mixedFaction = isWerewolfTeam(lovers[0]) !== isWerewolfTeam(lovers[1]);
 }
 
 function queueHunterShot(room, hunter, cause, phaseAfterShot) {
@@ -765,9 +925,7 @@ function completeCurrentStage(room) {
 }
 
 function getEffectiveWolfVictim(room) {
-  const targetId = room.nightActions.werewolfTarget;
-  if (!targetId || targetId === room.nightActions.guardTarget) return null;
-  return room.players.find(player => player.id === targetId && player.alive) || null;
+  return getEffectiveWolfVictims(room)[0] || null;
 }
 
 function ensureModerator(room, actorId) {
