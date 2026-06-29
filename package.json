@@ -1,0 +1,19 @@
+{
+  "name": "masoi",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently -n SERVER,CLIENT -c auto \"npm run dev -w masoi-server\" \"npm run dev -w masoi-client\"",
+    "build": "npm run build -w masoi-client",
+    "start": "npm run start -w masoi-server",
+    "install:all": "npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
