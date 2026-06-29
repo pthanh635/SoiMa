@@ -11,6 +11,7 @@ export function createRoom(moderatorSocketId, moderatorName) {
     code,
     moderatorId: moderatorSocketId,
     moderatorName: String(moderatorName || 'Người quản trò').trim().slice(0, 24),
+    moderatorConnected: true,
     moderatorDisconnected: false,
     status: 'waiting',
     phase: 'lobby',
@@ -26,6 +27,7 @@ export function createRoom(moderatorSocketId, moderatorName) {
     nightTurnIndex: -1,
     nightActions: emptyNightActions(),
     pendingHunterShot: null,
+    lovers: null,
     votes: {},
     chat: []
   };
@@ -47,19 +49,48 @@ export function joinRoom(code, socketId, name) {
   return room;
 }
 
+export function leaveRoom(room, socketId) {
+  if (room.moderatorId === socketId) {
+    room.moderatorConnected = false;
+    room.moderatorDisconnected = true;
+    room.resultMessage = 'Người quản trò đã rời phòng.';
+    return { room, type: 'moderator' };
+  }
+
+  const index = room.players.findIndex(player => player.id === socketId);
+  if (index === -1) throw new Error('Bạn không thuộc phòng này.');
+  const player = room.players[index];
+
+  if (room.status === 'waiting') {
+    room.players.splice(index, 1);
+  } else {
+    player.connected = false;
+    player.left = true;
+    player.leftAt = Date.now();
+  }
+  room.resultMessage = `${player.name} đã rời phòng.`;
+  return { room, type: 'player', player };
+}
+
 export function removePlayer(socketId) {
   for (const room of rooms.values()) {
-    if (room.moderatorId === socketId) {
+    if (room.moderatorId === socketId && room.moderatorConnected !== false) {
+      room.moderatorConnected = false;
       room.moderatorDisconnected = true;
-      room.resultMessage = 'Người quản trò đã rời phòng.';
+      room.resultMessage = 'Người quản trò đã mất kết nối.';
       return room;
     }
 
-    const idx = room.players.findIndex(p => p.id === socketId);
+    const idx = room.players.findIndex(p => p.id === socketId && !p.left);
     if (idx === -1) continue;
 
-    const [left] = room.players.splice(idx, 1);
-    room.resultMessage = `${left.name} đã rời phòng.`;
+    const player = room.players[idx];
+    if (room.status === 'waiting') {
+      room.players.splice(idx, 1);
+    } else {
+      player.connected = false;
+    }
+    room.resultMessage = `${player.name} đã mất kết nối.`;
 
     return room;
   }
@@ -69,7 +100,7 @@ export function removePlayer(socketId) {
 
 export function getRoomByPlayer(socketId) {
   for (const room of rooms.values()) {
-    if (room.moderatorId === socketId || room.players.some(p => p.id === socketId)) return room;
+    if ((room.moderatorId === socketId && room.moderatorConnected !== false) || room.players.some(p => p.id === socketId && !p.left)) return room;
   }
   return null;
 }
@@ -81,6 +112,7 @@ export function normalizeCode(code) {
 export function emptyNightActions() {
   return {
     werewolfTarget: null,
+    werewolfVotes: {},
     seerTarget: null,
     guardTarget: null,
     witchHealTarget: null,
@@ -96,7 +128,12 @@ function makePlayer(id, name) {
     role: null,
     team: null,
     alive: true,
+    connected: true,
+    left: false,
+    leftAt: null,
     hasUsedHunterShot: false,
+    isLover: false,
+    loverPartnerId: null,
     witchPotions: null
   };
 }

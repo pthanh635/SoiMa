@@ -4,8 +4,8 @@ import { createServer } from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { Server } from 'socket.io';
-import { createRoom, getRoomByPlayer, joinRoom, normalizeCode, removePlayer, rooms } from './rooms.js';
-import { addChat, doNightAction, endVote, goVoting, hunterShot, moderatorEndNight, moderatorNextStage, moderatorSkipHunterShot, moderatorSkipStage, publicStateFor, skipNightTurn, startGame, votePlayer } from './gameLogic.js';
+import { createRoom, getRoomByPlayer, joinRoom, leaveRoom, normalizeCode, removePlayer, rooms } from './rooms.js';
+import { addChat, doNightAction, endVote, goVoting, hunterShot, moderatorEndNight, moderatorNextStage, moderatorSkipHunterShot, moderatorSkipStage, publicStateFor, refreshWerewolfTarget, skipNightTurn, startGame, votePlayer } from './gameLogic.js';
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
@@ -52,10 +52,10 @@ io.on('connection', socket => {
     });
   });
 
-  socket.on('night_action', ({ roomCode, targetId, action }, cb) => {
+  socket.on('night_action', ({ roomCode, targetId, targetIds, action }, cb) => {
     safe(cb, () => {
       const room = requireRoom(roomCode);
-      const result = doNightAction(room, socket.id, targetId, action);
+      const result = doNightAction(room, socket.id, targetId, action, targetIds);
       if (result.type === 'seer') socket.emit('private_message', result.message);
       emitRoom(room);
       return { ok: true, message: result.message };
@@ -127,6 +127,20 @@ io.on('connection', socket => {
     });
   });
 
+  socket.on('leave_room', ({ roomCode }, cb) => {
+    safe(cb, () => {
+      const room = requireRoom(roomCode);
+      if (room.moderatorId !== socket.id && !room.players.some(player => player.id === socket.id)) {
+        throw new Error('Bạn không thuộc phòng này.');
+      }
+      leaveRoom(room, socket.id);
+      refreshWerewolfTarget(room);
+      socket.leave(room.code);
+      emitRoom(room);
+      return { ok: true };
+    });
+  });
+
   socket.on('hunter_shot', ({ roomCode, targetId }, cb) => {
     safe(cb, () => {
       const room = requireRoom(roomCode);
@@ -156,7 +170,10 @@ io.on('connection', socket => {
 
   socket.on('disconnect', () => {
     const room = removePlayer(socket.id);
-    if (room) emitRoom(room);
+    if (room) {
+      refreshWerewolfTarget(room);
+      emitRoom(room);
+    }
   });
 });
 
@@ -174,13 +191,13 @@ function requireRoom(roomCode) {
 }
 
 function requireModerator(room, socketId) {
-  if (room.moderatorId !== socketId) throw new Error('Chỉ Người quản trò mới được điều khiển trận đấu.');
+  if (room.moderatorId !== socketId || room.moderatorConnected === false) throw new Error('Chỉ Người quản trò đang kết nối mới được điều khiển trận đấu.');
 }
 
 function emitRoom(room) {
-  io.to(room.moderatorId).emit('game_state', publicStateFor(room, room.moderatorId));
+  if (room.moderatorConnected !== false) io.to(room.moderatorId).emit('game_state', publicStateFor(room, room.moderatorId));
   for (const player of room.players) {
-    io.to(player.id).emit('game_state', publicStateFor(room, player.id));
+    if (player.connected !== false && !player.left) io.to(player.id).emit('game_state', publicStateFor(room, player.id));
   }
 }
 

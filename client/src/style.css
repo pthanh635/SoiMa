@@ -23,6 +23,7 @@ h1, h2 { letter-spacing: -.025em; }
 .secondary-btn { border-color: rgba(218,188,120,.45); color: #ead19b; font-weight: 800; }
 .danger-btn { border-color: #a43746; color: white; background: linear-gradient(135deg, #a72d3e, #711c2b); font-weight: 800; }
 .danger-outline { border-color: rgba(218,68,87,.45); color: #f28e9c; }
+.leave-btn { border-color: rgba(218,68,87,.35); color: #f0a3ae; background: rgba(113,25,39,.14); font-weight: 800; white-space: nowrap; }
 .safe-btn { border-color: rgba(83,179,139,.5); color: #b8efd7; background: rgba(37,126,91,.2); font-weight: 800; }
 .text-btn { border: 0; color: #aaa1ae; background: transparent; text-decoration: underline; text-underline-offset: 3px; }
 .home-page { min-height: 100vh; display: grid; align-content: center; gap: 28px; padding-block: 44px; }
@@ -73,7 +74,22 @@ h1, h2 { letter-spacing: -.025em; }
 .role-guard { border-top-color: #3e9f83; }.role-guard::after { background: rgba(49,139,112,.14); }
 .role-witch { border-top-color: #a672ce; }.role-witch::after { background: rgba(155,92,196,.14); }
 .role-hunter { border-top-color: #d09b3c; }.role-hunter::after { background: rgba(208,155,60,.15); }
+.role-cupid { border-top-color: #d36c91; }.role-cupid::after { background: rgba(211,108,145,.15); }
 .team-label { color: #cbc1ce; }
+.identity-grid { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 18px 0; }
+.identity-grid > div { display: grid; gap: 4px; padding: 11px 12px; border-radius: 10px; background: rgba(0,0,0,.18); }
+.identity-grid dt { color: #8f8692; font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.identity-grid dd { margin: 0; color: #eee5d8; font-size: .95rem; font-weight: 800; overflow-wrap: anywhere; }
+.role-description, .current-action, .wolf-teammates, .wolf-vote-status, .lover-info { position: relative; margin-top: 14px; padding: 14px; border: 1px solid rgba(255,255,255,.08); border-radius: 12px; background: rgba(0,0,0,.16); }
+.role-description > strong, .current-action > strong, .wolf-teammates > strong { color: #d9bd7a; }
+.role-description p, .current-action p, .wolf-teammates p, .wolf-vote-status p { margin: 6px 0 0; color: #b9b0bc; line-height: 1.5; }
+.current-action { border-color: rgba(216,180,102,.3); background: rgba(151,109,37,.1); }
+.wolf-teammates { border-color: rgba(190,54,73,.28); background: rgba(111,25,39,.14); }
+.wolf-teammates ul { display: grid; gap: 7px; margin: 10px 0 0; padding: 0; list-style: none; }
+.wolf-teammates li { display: flex; justify-content: space-between; gap: 10px; color: #ead5d8; }
+.wolf-teammates small { color: #a99397; }
+.lover-info { border-color: rgba(211,108,145,.3); background: rgba(126,45,76,.14); }.lover-info > strong { color: #eda9c1; }.lover-info p { margin: 7px 0; color: #d8c1ca; }.lover-info small { color: #bda5ae; }
+.moderator-leave { width: 100%; margin-top: 14px; }
 .role-hint { margin: 16px 0 0; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.08); color: #aaa1ae; line-height: 1.6; font-size: .9rem; }
 .potion-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 15px; }
 .potion-row span { border-radius: 999px; padding: 7px 10px; font-size: .73rem; font-weight: 800; }
@@ -113,6 +129,12 @@ h1, h2 { letter-spacing: -.025em; }
 .waiting-panel strong { color: #d5ccd6; }.waiting-panel p { margin: 5px 0 0; color: #928995; line-height: 1.5; }
 .your-turn { display: grid; gap: 5px; border-color: rgba(216,180,102,.3); background: rgba(151,109,37,.1); }.your-turn span { color: #d9b766; font-size: .65rem; font-weight: 900; letter-spacing: .13em; }
 .witch-actions { margin: 20px 0; padding: 16px; border-radius: 14px; background: rgba(95,52,123,.15); }.witch-actions p { color: #bdb2c1; }
+.wolf-vote-status { border-color: rgba(190,54,73,.3); background: rgba(111,25,39,.16); }
+.wolf-vote-status .wolf-teammates { margin-top: 0; }
+.wolf-vote-list { display: grid; gap: 7px; margin-top: 12px; }
+.wolf-vote-list > div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 10px; border-radius: 9px; background: rgba(0,0,0,.2); }
+.wolf-vote-list span { color: #ead5d8; font-weight: 800; }.wolf-vote-list small { color: #c4aeb2; text-align: right; }
+.cupid-selection { margin-top: 18px; }.selection-counter { color: #e5adc2; font-weight: 850; }
 .target-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 9px; margin: 20px 0; }
 .target { display: grid; justify-items: center; gap: 5px; min-height: 112px; padding: 14px 9px; background: rgba(4,3,7,.22); }.target:hover:not(:disabled) { border-color: rgba(216,180,102,.35); }.target.active { border-color: #d0a750; color: #f2d894; background: rgba(164,118,36,.18); box-shadow: inset 0 0 0 1px rgba(208,167,80,.18); }
 .target-check { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; color: #ae9eb1; background: rgba(255,255,255,.07); font-family: Georgia, serif; }.target.active .target-check { color: #171008; background: #d0a750; }
@@ -139,5 +161,5 @@ h1, h2 { letter-spacing: -.025em; }
 .final-roles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin: 28px 0; }.final-roles div { display: grid; gap: 5px; padding: 14px; border-radius: 12px; background: rgba(0,0,0,.2); }.final-roles span { color: #aaa1ab; }.final-roles strong { color: #e2c786; }
 .restart-note { margin-bottom: 0; color: #837a86; font-size: .85rem; }
 @media (max-width: 820px) { .game-layout, .lobby-layout { grid-template-columns: 1fr; }.lobby-intro { min-height: auto; }.left-stack { grid-template-columns: 1fr; }.topbar { align-items: flex-start; flex-direction: column; }.status-items { justify-content: flex-start; width: 100%; }.status-items > div:first-child { border-left: 0; padding-left: 0; }.lobby-layout .players-panel { order: -1; } }
-@media (max-width: 620px) { .page { width: min(100% - 20px, 1200px); padding-top: 12px; }.home-page { padding-block: 28px; gap: 22px; }.home-grid { grid-template-columns: 1fr; }.home-hero h1 { font-size: 2.8rem; }.entry-card { min-height: auto; }.panel { padding: 18px; border-radius: 17px; }.topbar { padding: 13px; }.status-items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }.status-items > div { min-width: 0; padding: 7px 9px; border-left: 0; border-radius: 9px; background: rgba(255,255,255,.035); }.life-badge { justify-content: center; }.feedback { align-items: flex-start; flex-direction: column; gap: 4px; }.room-code { font-size: 3.4rem; }.preset-items { grid-template-columns: 1fr; }.player-card { align-items: flex-start; flex-wrap: wrap; }.player-info { width: calc(100% - 48px); }.tags { width: 100%; justify-content: flex-start; padding-left: 44px; }.target-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.chat-form { grid-template-columns: 1fr; }.chat-form button { width: 100%; }.host-controls > div { display: grid; }.host-controls button { width: 100%; } }
+@media (max-width: 620px) { .page { width: min(100% - 20px, 1200px); padding-top: 12px; }.home-page { padding-block: 28px; gap: 22px; }.home-grid { grid-template-columns: 1fr; }.home-hero h1 { font-size: 2.8rem; }.entry-card { min-height: auto; }.panel { padding: 18px; border-radius: 17px; }.topbar { padding: 13px; }.status-items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }.status-items > div { min-width: 0; padding: 7px 9px; border-left: 0; border-radius: 9px; background: rgba(255,255,255,.035); }.status-items > button { width: 100%; }.identity-grid { grid-template-columns: 1fr; }.life-badge { justify-content: center; }.feedback { align-items: flex-start; flex-direction: column; gap: 4px; }.room-code { font-size: 3.4rem; }.preset-items { grid-template-columns: 1fr; }.player-card { align-items: flex-start; flex-wrap: wrap; }.player-info { width: calc(100% - 48px); }.tags { width: 100%; justify-content: flex-start; padding-left: 44px; }.target-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.chat-form { grid-template-columns: 1fr; }.chat-form button { width: 100%; }.host-controls > div { display: grid; }.host-controls button { width: 100%; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
