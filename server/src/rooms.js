@@ -120,6 +120,8 @@ export function emptyNightActions() {
     guardTarget: null,
     witchHealTarget: null,
     witchPoisonTarget: null,
+    witchHealDecision: null,
+    witchPoisonDecision: null,
     acted: {}
   };
 }

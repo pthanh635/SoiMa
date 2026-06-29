@@ -260,8 +260,24 @@ export function moderatorEndNight(room, actorId) {
 }
 
 function doWitchAction(room, actor, targetId, action) {
-  if (!['heal', 'poison'].includes(action)) {
+  if (!['heal', 'poison', 'skip_heal', 'skip_poison'].includes(action)) {
     throw new Error('Phù thủy hãy chọn dùng bình cứu hoặc bình độc.');
+  }
+
+  if (action === 'skip_heal') {
+    if (actor.witchPotions?.heal) {
+      room.nightActions.witchHealDecision = 'skipped';
+    } else {
+      room.nightActions.witchHealDecision = 'unavailable';
+    }
+    if (isWitchStageResolved(room, actor)) completeCurrentStage(room);
+    return { type: 'witch', message: 'Bạn đã không dùng bình cứu.' };
+  }
+
+  if (action === 'skip_poison') {
+    room.nightActions.witchPoisonDecision = actor.witchPotions?.poison ? 'skipped' : 'unavailable';
+    if (isWitchStageResolved(room, actor)) completeCurrentStage(room);
+    return { type: 'witch', message: 'Bạn đã không dùng bình độc.' };
   }
 
   if (!actor.witchPotions?.[action]) {
@@ -269,6 +285,7 @@ function doWitchAction(room, actor, targetId, action) {
   }
 
   if (action === 'heal') {
+    if (room.nightActions.witchHealDecision === 'used') throw new Error('Bình cứu đã dùng.');
     const wolfVictims = getEffectiveWolfVictims(room);
     const wolfTargetId = targetId || (wolfVictims.length === 1 ? wolfVictims[0].id : null);
     if (!wolfVictims.length) throw new Error('Đêm nay không có ai đang chết vì Ma sói.');
@@ -279,11 +296,13 @@ function doWitchAction(room, actor, targetId, action) {
     }
 
     room.nightActions.witchHealTarget = target.id;
+    room.nightActions.witchHealDecision = 'used';
     actor.witchPotions.heal = false;
-    if (!canWitchStillAct(actor)) completeCurrentStage(room);
+    if (isWitchStageResolved(room, actor)) completeCurrentStage(room);
     return { type: 'witch', message: `Đã dùng bình cứu cho ${target.name}.` };
   }
 
+  if (room.nightActions.witchPoisonDecision === 'used') throw new Error('Bình độc đã dùng.');
   const target = findAlivePlayer(room, targetId);
   if (target.id === actor.id) throw new Error('Phù thủy không thể tự dùng bình độc.');
   if (room.nightActions.witchHealTarget === target.id) {
@@ -291,8 +310,9 @@ function doWitchAction(room, actor, targetId, action) {
   }
 
   room.nightActions.witchPoisonTarget = target.id;
+  room.nightActions.witchPoisonDecision = 'used';
   actor.witchPotions.poison = false;
-  if (!canWitchStillAct(actor)) completeCurrentStage(room);
+  if (isWitchStageResolved(room, actor)) completeCurrentStage(room);
   return { type: 'witch', message: `Đã dùng bình độc lên ${target.name}.` };
 }
 
@@ -655,6 +675,7 @@ export function publicStateFor(room, socketId) {
       nightActions: { ...room.nightActions, werewolfVotes: { ...room.nightActions.werewolfVotes } },
       werewolfVoteStatus: stage?.key === 'werewolf' ? serializeWerewolfVoteStatus(room, wolfVoteSummary, true) : null,
       werewolfNightInfo: stage?.key === 'werewolf' ? serializeWerewolfNightInfo(room, wolfVoteSummary) : null,
+      witchActionStatus: stage?.key === 'witch' ? serializeWitchActionStatus(room) : null,
       wolfChildRevenge: serializeWolfChildRevenge(room),
       moderatorLoversInfo: serializeModeratorLoversInfo(room),
       moderatorNotes: [...(room.moderatorNotes || [])],
@@ -681,9 +702,10 @@ export function publicStateFor(room, socketId) {
       witchVictim: me.role === 'witch' && room.currentNightStage === 'witch'
         ? effectiveWolfVictim?.id || null
         : null,
-      witchVictims: me.role === 'witch' && room.currentNightStage === 'witch'
-        ? getEffectiveWolfVictims(room).map(publicPlayerStatus)
-        : [],
+      ...(me.role === 'witch' && room.currentNightStage === 'witch' ? {
+        witchVictims: getEffectiveWolfVictims(room).map(publicPlayerStatus),
+        witchActionStatus: serializeWitchActionStatus(room)
+      } : {}),
       ...(isWerewolfTeam(me) ? {
         werewolfTeammates: room.players.filter(player => isWerewolfTeam(player) && player.id !== me.id).map(publicPlayerStatus)
       } : {}),
@@ -801,6 +823,15 @@ function playerMatchesStage(player, stage) {
 function serializeWolfChildRevenge(room) {
   const state = room.wolfChildRevenge || emptyWolfChildRevenge();
   return { ...state, maxTargets: getWerewolfMaxTargets(room) };
+}
+
+function serializeWitchActionStatus(room) {
+  return {
+    healDecision: room.nightActions.witchHealDecision || (getEffectiveWolfVictims(room).length ? 'pending' : 'unavailable'),
+    poisonDecision: room.nightActions.witchPoisonDecision || 'pending',
+    healTargetId: room.nightActions.witchHealTarget,
+    poisonTargetId: room.nightActions.witchPoisonTarget
+  };
 }
 
 function normalizeWerewolfTargetIds(targetId, targetIds, maxTargets) {
@@ -932,8 +963,10 @@ function ensureModerator(room, actorId) {
   if (room.moderatorId !== actorId || room.moderatorConnected === false) throw new Error('Chỉ Người quản trò đang kết nối mới được điều khiển trận đấu.');
 }
 
-function canWitchStillAct(player) {
-  return Boolean(player.witchPotions?.heal || player.witchPotions?.poison);
+function isWitchStageResolved(room, player) {
+  const healResolved = !player.witchPotions?.heal || !getEffectiveWolfVictims(room).length || ['used', 'skipped', 'unavailable'].includes(room.nightActions.witchHealDecision);
+  const poisonResolved = !player.witchPotions?.poison || ['used', 'skipped', 'unavailable'].includes(room.nightActions.witchPoisonDecision);
+  return healResolved && poisonResolved;
 }
 
 function buildRoleDeck(count) {

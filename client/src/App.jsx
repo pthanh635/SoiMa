@@ -33,6 +33,72 @@ const NIGHT_INFO = {
 
 const BLANK_VOTE = '**blank**';
 
+// Put new role artwork in client/public/roles/<filename>.png and add the mapping here.
+// The UI uses public paths so future images do not need import changes.
+const ROLE_IMAGES = {
+  villager: '/roles/villager.png',
+  guard: '/roles/guard.png',
+  seer: '/roles/seer.png',
+  witch: '/roles/witch.png',
+  hunter: '/roles/hunter.png',
+  cupid: '/roles/cupid.png',
+  elder: '/roles/elder.png',
+  cursed_villager: '/roles/cursed.png',
+  werewolf: '/roles/werewolf.png',
+  wolf_child: '/roles/wolfcub.png'
+};
+
+const ROLE_IMAGE_ALIASES = {
+  cursed: 'cursed_villager',
+  wolfcub: 'wolf_child',
+  wolf_child: 'wolf_child',
+  werewolf: 'werewolf',
+  bodyguard: 'guard',
+  protector: 'guard',
+  fortune_teller: 'seer'
+};
+
+function getRoleImage(roleKey) {
+  if (!roleKey) return null;
+  const normalizedKey = ROLE_IMAGE_ALIASES[roleKey] || roleKey;
+  return ROLE_IMAGES[normalizedKey] || null;
+}
+
+function RoleImage({ roleKey, label, size = 'large' }) {
+  const src = getRoleImage(roleKey);
+  const [broken, setBroken] = useState(false);
+  useEffect(() => setBroken(false), [src, roleKey]);
+  const fallbackLabel = (label || roleKey || '?').trim();
+  const fallbackText = fallbackLabel.charAt(0).toUpperCase();
+  if (!src || broken) {
+    return (
+      <div
+        className={`role-image-placeholder ${size === 'thumb' ? 'role-image-thumb' : 'role-image-large'}`}
+        aria-hidden="true"
+        data-role-key={roleKey || ''}
+        data-role-src={src || ''}
+        title={`${roleKey || ''} -> ${src || 'no-src'}`}
+      >
+        <span>{fallbackText}</span>
+      </div>
+    );
+  }
+  return (
+    <img
+      className={size === 'thumb' ? 'role-image-thumb' : 'role-image-large'}
+      src={src}
+      alt={fallbackLabel}
+      title={`${roleKey || ''} -> ${src || 'no-src'}`}
+      data-role-key={roleKey || ''}
+      data-role-src={src || ''}
+      onError={() => {
+        console.warn('Role image failed:', { roleKey, src });
+        setBroken(true);
+      }}
+    />
+  );
+}
+
 export default function App() {
   const [screen, setScreen] = useState('home');
   const [moderatorName, setModeratorName] = useState(localStorage.getItem('masoi_moderator_name') || '');
@@ -149,8 +215,8 @@ export default function App() {
       ) : (
         <section className="game-layout">
           <aside className="left-stack">
-            {state?.viewerType === 'player' ? <RolePanel state={state} /> : <><ModeratorIdentity state={state} onLeave={leaveCurrentRoom} /><PresetPreview state={state} /><RoleLibrary roles={state?.roleLibrary || []} /></>}
-            <PlayersPanel players={players} />
+            {state?.viewerType === 'player' ? <RolePanel state={state} /> : <ModeratorIdentity state={state} onLeave={leaveCurrentRoom} />}
+            <PlayersPanel players={players} showRoleImages={Boolean(state?.isModerator)} />
           </aside>
           <div className="right-stack">
             {state.phase === 'night' && <NightPanel state={state} players={alivePlayers} canAct={canActAtNight} selectedTarget={selectedTarget} setSelectedTarget={setSelectedTarget} selectedCupidTargets={selectedCupidTargets} setSelectedCupidTargets={setSelectedCupidTargets} onAction={(target, action) => emit('night_action', Array.isArray(target) ? { roomCode: state.code, targetIds: target, action } : { roomCode: state.code, targetId: target, action })} onCupidAction={targetIds => emit('night_action', { roomCode: state.code, targetIds })} onSkip={() => emit('skip_night_turn', { roomCode: state.code })} onNextStage={() => emit('moderator_next_stage', { roomCode: state.code })} onSkipStage={() => emit('moderator_skip_stage', { roomCode: state.code })} onEndNight={() => emit('end_night', { roomCode: state.code })} />}
@@ -231,7 +297,7 @@ function Lobby({ state, onStart, onCopy, copied }) {
         {state?.isModerator && <RoleLibrary roles={state?.roleLibrary || []} />}
         {state?.isModerator ? <button className="primary-btn start-btn" onClick={onStart}>Bắt đầu game</button> : <p className="host-note">Đang chờ Người quản trò bắt đầu game.</p>}
       </article>
-      <PlayersPanel players={players} compact />
+      <PlayersPanel players={players} compact showRoleImages={Boolean(state?.isModerator)} />
     </section>
   );
 }
@@ -257,7 +323,7 @@ const FACTION_LABEL = { village: 'Phe Dân Làng', werewolf: 'Phe Ma Sói', solo
 
 function RoleLibrary({ roles = [] }) {
   const factions = ['village', 'werewolf', 'solo', 'lovers', 'special', 'random'];
-  return <details className="panel role-library"><summary>Danh sách vai trò <span>{roles.length} vai</span></summary><p className="muted">Thư viện mô tả công khai. Các vai chưa triển khai không được chia trong game.</p><div className="role-library-groups">{factions.map(faction => { const factionRoles = roles.filter(role => role.faction === faction); if (!factionRoles.length) return null; return <details key={faction}><summary>{FACTION_LABEL[faction]} <span>{factionRoles.length}</span></summary><div className="role-library-grid">{factionRoles.map(role => <article key={role.key} className="library-role" title={role.description}><div><strong>{role.labelVi}</strong><small className={role.isImplemented ? 'implemented' : 'unimplemented'}>{role.isImplemented ? 'Đã triển khai' : 'Chưa triển khai'}</small></div><p>{role.shortDescription}</p><footer><span>{role.aura}</span><span>{role.group}</span>{role.isNightRole && <span>Vai đêm</span>}</footer></article>)}</div></details>; })}</div></details>;
+  return <details className="panel role-library"><summary>Danh sách vai trò <span>{roles.length} vai</span></summary><p className="muted">Thư viện mô tả công khai. Các vai chưa triển khai không được chia trong game.</p><div className="role-library-groups">{factions.map(faction => { const factionRoles = roles.filter(role => role.faction === faction); if (!factionRoles.length) return null; return <details key={faction}><summary>{FACTION_LABEL[faction]} <span>{factionRoles.length}</span></summary><div className="role-library-grid">{factionRoles.map(role => <article key={role.key} className="library-role" title={role.description}><RoleImage roleKey={role.key} label={role.labelVi} size="thumb" /><div><strong>{role.labelVi}</strong><small className={role.isImplemented ? 'implemented' : 'unimplemented'}>{role.isImplemented ? 'Đã triển khai' : 'Chưa triển khai'}</small></div><p>{role.shortDescription}</p><footer><span>{role.aura}</span><span>{role.group}</span>{role.isNightRole && <span>Vai đêm</span>}</footer></article>)}</div></details>; })}</div></details>;
 }
 
 function RolePanel({ state }) {
@@ -268,6 +334,7 @@ function RolePanel({ state }) {
   const currentAction = state?.isMyNightTurn ? NIGHT_INFO[state?.currentNightStage]?.instruction : null;
   return (
     <section className={`panel role-card role-${role}`}>
+      <RoleImage roleKey={me?.role} label={me?.roleLabel || me?.role || 'Vai bí mật'} size="large" />
       <div className="panel-heading"><div><p className="eyebrow">Thông tin của bạn</p><h2>{me?.name || 'Người chơi'}</h2></div><span className={`life-badge ${me?.alive && me?.connected && !me?.left ? 'alive' : 'dead'}`}>{status}</span></div>
       <dl className="identity-grid"><div><dt>Vai trò</dt><dd>{me?.roleLabel || 'Chưa chia vai'}</dd></div><div><dt>Phe</dt><dd>{me?.teamLabel || 'Chưa xác định'}</dd></div><div><dt>Mã phòng</dt><dd>{state?.code || '—'}</dd></div><div><dt>Vòng</dt><dd>{state?.round || '—'}</dd></div><div><dt>Giai đoạn</dt><dd>{PHASE_LABEL[state?.phase] || 'Đang chờ'}</dd></div><div><dt>Trạng thái</dt><dd>{status}</dd></div></dl>
       {me?.role && <div className="role-description"><strong>Mô tả vai</strong><p>{ROLE_HINT[me.role]}</p></div>}
@@ -305,13 +372,13 @@ function ModeratorIdentity({ state, onLeave }) {
   return <section className="panel moderator-identity"><div className="panel-heading"><div><p className="eyebrow">Thông tin Quản trò</p><h2>{moderator?.name || 'Bạn'}</h2></div><span className={`life-badge ${moderator?.connected ? 'alive' : 'dead'}`}>{moderator?.connected ? 'Đang kết nối' : 'Mất kết nối'}</span></div><dl className="identity-grid"><div><dt>Mã phòng</dt><dd>{state?.code || '—'}</dd></div><div><dt>Số người chơi</dt><dd>{state?.playerCount || 0}</dd></div><div><dt>Giai đoạn</dt><dd>{PHASE_LABEL[state?.phase] || 'Đang chờ'}</dd></div><div><dt>Vòng</dt><dd>{state?.round || '—'}</dd></div></dl><p className="muted">Quản trò điều khiển trận đấu và không tham gia như một người chơi.</p>{lovers && <div className="lover-info"><strong>Cặp đôi</strong>{lovers.names.map((name, index) => <p key={lovers.playerIds[index]}>{name} · {lovers.roleLabels[index]} · {lovers.aliveStatuses[index]?.alive ? 'Còn sống' : 'Đã chết'}</p>)}<small>Khác phe: {lovers.mixedFaction ? 'Có' : 'Không'}</small></div>}{moderator?.moderatorNotes?.length > 0 && <div className="moderator-private-log"><strong>Ghi chú riêng</strong>{moderator.moderatorNotes.map(note => <p key={note.id}>Vòng {note.round}: {note.message}</p>)}</div>}<button className="leave-btn moderator-leave" onClick={onLeave}>Rời phòng</button></section>;
 }
 
-function PlayersPanel({ players = [], compact = false }) {
+function PlayersPanel({ players = [], compact = false, showRoleImages = false }) {
   return (
     <section className={`panel players-panel ${compact ? 'compact-panel' : ''}`}>
       <div className="panel-heading"><div><p className="eyebrow">Ngôi làng</p><h2>Người chơi</h2></div><span className="count-badge">{players.length} người</span></div>
       <div className="player-list">
         {players.length === 0 && <p className="muted">Chưa có người chơi.</p>}
-        {players.map(player => { const status = player.left ? 'Đã rời phòng' : !player.connected ? 'Mất kết nối' : player.alive ? 'Sống' : 'Đã chết'; return <div className={`player-card ${player.alive && !player.left ? '' : 'is-dead'} ${player.isMe ? 'is-me' : ''}`} key={player.id}><span className="player-avatar">{player.name?.charAt(0)?.toUpperCase() || '?'}</span><div className="player-info"><strong>{player.name}</strong><small>{player.roleLabel || 'Vai bí mật'}</small></div><div className="tags">{player.isMe && <span>Bạn</span>}<span className={player.alive && player.connected && !player.left ? 'alive-tag' : 'dead-tag'}>{status}</span></div></div>; })}
+        {players.map(player => { const status = player.left ? 'Đã rời phòng' : !player.connected ? 'Mất kết nối' : player.alive ? 'Sống' : 'Đã chết'; return <div className={`player-card ${player.alive && !player.left ? '' : 'is-dead'} ${player.isMe ? 'is-me' : ''}`} key={player.id}>{showRoleImages && player.roleLabel ? <RoleImage roleKey={player.role} label={player.roleLabel} size="thumb" /> : <span className="player-avatar">{player.name?.charAt(0)?.toUpperCase() || '?'}</span>}<div className="player-info"><strong>{player.name}</strong><small>{player.roleLabel || 'Vai bí mật'}</small></div><div className="tags">{player.isMe && <span>Bạn</span>}<span className={player.alive && player.connected && !player.left ? 'alive-tag' : 'dead-tag'}>{status}</span></div></div>; })}
       </div>
     </section>
   );
@@ -352,12 +419,11 @@ function NightPanel({ state, players = [], canAct, selectedTarget, setSelectedTa
       {isCupidStage && canAct && me?.role === 'cupid' && <CupidSelection players={players} selected={selectedCupidTargets} setSelected={setSelectedCupidTargets} onConfirm={onCupidAction} />}
       {isCupidStage && me?.role === 'cupid' && state?.cupidInfo?.completed && <div className="success-note">Bạn đã ghép đôi: {state.cupidInfo.selectedNames.join(' và ')}.</div>}
       {isWerewolf && state?.currentNightStage === 'werewolf' && <WerewolfVoteDetails info={wolfInfo} currentWolfId={me?.id} />}
-      {canAct && isWitch && <div className="witch-actions"><p>{witchVictims.length ? <>Người bị Ma sói cắn: <strong>{witchVictims.map(victim => victim.name).join(', ')}</strong></> : <strong>Không có ai chết do Ma sói trong đêm nay.</strong>}</p>{witchVictims.length > 1 && <TargetGrid players={witchVictims} selected={selectedTarget} onSelect={setSelectedTarget} prefix="Chọn để cứu" />}<button className="safe-btn" disabled={!me?.witchPotions?.heal || !healTargetId} onClick={() => onAction(healTargetId, 'heal')}>Dùng bình cứu {me?.witchPotions?.heal ? '' : '· Đã dùng'}</button></div>}
-      {canAct && !isCupidStage && (!isWitch || me?.witchPotions?.poison) && <TargetGrid players={targets} selected={effectiveSelectedTarget} onSelect={isWolfRevenge ? toggleWolfTarget : setSelectedTarget} prefix={isWitch ? 'Đầu độc' : isWolfRevenge ? 'Chọn mục tiêu' : 'Chọn'} maxSelections={isWolfRevenge ? wolfMaxTargets : 1} />}
+      {canAct && isWitch && <WitchActionPanel me={me} targets={targets} witchVictims={witchVictims} selectedTarget={selectedTarget} setSelectedTarget={setSelectedTarget} healTargetId={healTargetId} onAction={onAction} />}
+      {canAct && !isCupidStage && !isWitch && <TargetGrid players={targets} selected={effectiveSelectedTarget} onSelect={isWolfRevenge ? toggleWolfTarget : setSelectedTarget} prefix={isWolfRevenge ? 'Chọn mục tiêu' : 'Chọn'} maxSelections={isWolfRevenge ? wolfMaxTargets : 1} />}
       {canAct && isWolfRevenge && <p className="selection-counter">Đã chọn {selectedCount}/{wolfMaxTargets}</p>}
       {canAct && !isCupidStage && !isWitch && <button className="primary-btn action-confirm" disabled={selectedCount === 0} onClick={() => onAction(effectiveSelectedTarget)}>{isWerewolf ? (isWolfRevenge ? 'Gửi biểu quyết cắn' : 'Bỏ phiếu cắn người này') : 'Xác nhận hành động'}</button>}
-      {canAct && isWitch && <button className="danger-btn action-confirm" disabled={!me?.witchPotions?.poison || !selectedTarget} onClick={() => onAction(selectedTarget, 'poison')}>Dùng bình độc {me?.witchPotions?.poison ? '' : '· Đã dùng'}</button>}
-      {canAct && !isCupidStage && <button className="text-btn" onClick={onSkip}>Bỏ qua lượt của tôi</button>}
+      {canAct && !isCupidStage && !isWitch && <button className="text-btn" onClick={onSkip}>Bỏ qua lượt của tôi</button>}
       {state?.isModerator && <ModeratorPanel state={state} onNext={onNextStage} onSkip={onSkipStage} onEndNight={onEndNight} />}
     </section>
   );
@@ -373,6 +439,76 @@ function CupidSelection({ players = [], selected = [], setSelected, onConfirm })
     if (selected.length < 2) setSelected([...selected, playerId]);
   }
   return <div className="cupid-selection"><h2>Bạn là Thần tình yêu</h2><p className="selection-counter">Đã chọn {selected.length}/2</p><div className="target-grid">{players.map(player => <button className={`target ${selected.includes(player.id) ? 'active' : ''}`} key={player.id} onClick={() => toggle(player.id)}><span className="target-check">{selected.includes(player.id) ? '✓' : player.name?.charAt(0)?.toUpperCase()}</span><strong>{player.name}</strong><small>{selected.includes(player.id) ? 'Đã chọn' : 'Ghép đôi'}</small></button>)}</div><button className="primary-btn action-confirm" disabled={selected.length !== 2} onClick={() => onConfirm(selected)}>Xác nhận ghép đôi</button></div>;
+}
+
+function WitchActionPanel({ me, targets = [], witchVictims = [], selectedTarget, setSelectedTarget, healTargetId, onAction }) {
+  const witchStatus = me?.witchActionStatus || {};
+  const healDecision = witchStatus.healDecision || (me?.witchPotions?.heal ? 'pending' : 'unavailable');
+  const poisonDecision = witchStatus.poisonDecision || (me?.witchPotions?.poison ? 'pending' : 'unavailable');
+  const canChooseHeal = me?.witchPotions?.heal && healDecision === 'pending';
+  const canChoosePoison = me?.witchPotions?.poison && poisonDecision === 'pending';
+  const healStatusText = healDecision === 'used'
+    ? 'Bạn đã dùng bình cứu.'
+    : healDecision === 'skipped'
+      ? 'Bạn đã không dùng bình cứu.'
+      : healDecision === 'unavailable'
+        ? 'Đêm nay không có ai có thể cứu.'
+        : witchVictims.length
+          ? 'Bạn có thể chọn một người để cứu.'
+          : 'Đêm nay không có ai có thể cứu.';
+  const poisonStatusText = poisonDecision === 'used'
+    ? 'Bạn đã dùng bình độc.'
+    : poisonDecision === 'skipped'
+      ? 'Bạn đã không dùng bình độc.'
+      : poisonDecision === 'unavailable'
+        ? 'Bình độc đã được sử dụng.'
+        : 'Bạn có thể chọn một người để đầu độc.';
+  return (
+    <div className="witch-actions">
+      <h2>Bạn là Phù thủy</h2>
+      <div className="potion-row">
+        <span className={me?.witchPotions?.heal ? 'available' : 'used'}>Bình cứu: {me?.witchPotions?.heal ? 'Còn' : 'Đã dùng'}</span>
+        <span className={me?.witchPotions?.poison ? 'available' : 'used'}>Bình độc: {me?.witchPotions?.poison ? 'Còn' : 'Đã dùng'}</span>
+      </div>
+      <section className="witch-section">
+        <strong>Bình cứu</strong>
+        <p className={`witch-status ${healDecision !== 'pending' ? 'resolved' : ''}`}>{healStatusText}</p>
+        {canChooseHeal ? (
+          witchVictims.length ? (
+            <>
+              <p>Người có thể cứu: <strong>{witchVictims.map(victim => victim.name).join(', ')}</strong></p>
+              {witchVictims.length > 1 && <TargetGrid players={witchVictims} selected={selectedTarget} onSelect={setSelectedTarget} prefix="Chọn để cứu" />}
+              <div className="witch-button-row">
+                <button className="safe-btn" disabled={!healTargetId} onClick={() => onAction(healTargetId, 'heal')}>Dùng bình cứu</button>
+                <button className="text-btn" disabled={healDecision !== 'pending'} onClick={() => onAction(null, 'skip_heal')}>Không dùng bình cứu</button>
+              </div>
+            </>
+          ) : (
+            <div className="witch-button-row">
+              <button className="text-btn" disabled={healDecision !== 'pending'} onClick={() => onAction(null, 'skip_heal')}>Không dùng bình cứu</button>
+            </div>
+          )
+        ) : (
+          <p>{healStatusText}</p>
+        )}
+      </section>
+      <section className="witch-section">
+        <strong>Bình độc</strong>
+        <p className={`witch-status ${poisonDecision !== 'pending' ? 'resolved' : ''}`}>{poisonStatusText}</p>
+        {canChoosePoison ? (
+          <>
+            <TargetGrid players={targets} selected={selectedTarget} onSelect={setSelectedTarget} prefix="Đầu độc" />
+            <div className="witch-button-row">
+              <button className="danger-btn" disabled={!selectedTarget} onClick={() => onAction(selectedTarget, 'poison')}>Dùng bình độc</button>
+              <button className="text-btn" disabled={poisonDecision !== 'pending'} onClick={() => onAction(null, 'skip_poison')}>Không dùng bình độc</button>
+            </div>
+          </>
+        ) : (
+          <p>{poisonStatusText}</p>
+        )}
+      </section>
+    </div>
+  );
 }
 
 function ModeratorPanel({ state, onNext, onSkip, onEndNight }) {
