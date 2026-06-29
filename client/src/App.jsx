@@ -303,27 +303,33 @@ function Lobby({ state, onStart, onCopy, copied }) {
 }
 
 function PresetPreview({ state }) {
-  const items = state?.suggestedPresetItems || [];
-  const alternatives = state?.suggestedPresetAlternatives || [];
+  const items = (state?.suggestedPresetItems || []).filter(item => item.isImplemented !== false);
+  const alternatives = (state?.suggestedPresetAlternatives || [])
+    .map(alternative => ({
+      ...alternative,
+      items: (alternative.items || []).filter(item => item.isImplemented !== false)
+    }))
+    .filter(alternative => (alternative.items || []).length > 0);
   return (
     <div className="preset-preview">
       <div className="preset-heading"><div><p className="eyebrow">Gợi ý tự động</p><h3>Preset cho {state?.playerCount ?? 0} người</h3></div><span className="count-badge">{items.reduce((sum, item) => sum + (item?.count || 0), 0)} vai</span></div>
       <PresetItems items={items} />
-      {state?.presetWarning && <div className="preset-warning"><strong>Có vai chưa triển khai</strong><span>{state.presetWarning}</span></div>}
       {alternatives.map(alternative => <div className="preset-alternative" key={alternative.key}><strong>{alternative.label}</strong><PresetItems items={alternative.items || []} /></div>)}
     </div>
   );
 }
 
 function PresetItems({ items = [] }) {
-  return <div className="preset-items">{items.map(item => <div className="preset-role" key={item.role} title={item.description}><div><strong>{item.labelVi}</strong><span>×{item.count}</span></div><p>{item.shortDescription}</p><small className={item.isImplemented ? 'implemented' : 'unimplemented'}>{item.isImplemented ? 'Đã triển khai' : 'Chưa triển khai'}</small></div>)}</div>;
+  const visibleItems = items.filter(item => item.isImplemented !== false);
+  return <div className="preset-items">{visibleItems.map(item => <div className="preset-role" key={item.role} title={item.description}><div><strong>{item.labelVi}</strong><span>×{item.count}</span></div><p>{item.shortDescription}</p></div>)}</div>;
 }
 
-const FACTION_LABEL = { village: 'Phe Dân Làng', werewolf: 'Phe Ma Sói', solo: 'Phe Solo', lovers: 'Phe Cặp Đôi', special: 'Phe Đặc Biệt', random: 'Phe Đặc Biệt / Random' };
+const FACTION_LABEL = { village: 'Phe Dân Làng', werewolf: 'Phe Ma Sói', special: 'Phe Đặc Biệt' };
 
 function RoleLibrary({ roles = [] }) {
-  const factions = ['village', 'werewolf', 'solo', 'lovers', 'special', 'random'];
-  return <details className="panel role-library"><summary>Danh sách vai trò <span>{roles.length} vai</span></summary><p className="muted">Thư viện mô tả công khai. Các vai chưa triển khai không được chia trong game.</p><div className="role-library-groups">{factions.map(faction => { const factionRoles = roles.filter(role => role.faction === faction); if (!factionRoles.length) return null; return <details key={faction}><summary>{FACTION_LABEL[faction]} <span>{factionRoles.length}</span></summary><div className="role-library-grid">{factionRoles.map(role => <article key={role.key} className="library-role" title={role.description}><RoleImage roleKey={role.key} label={role.labelVi} size="thumb" /><div><strong>{role.labelVi}</strong><small className={role.isImplemented ? 'implemented' : 'unimplemented'}>{role.isImplemented ? 'Đã triển khai' : 'Chưa triển khai'}</small></div><p>{role.shortDescription}</p><footer><span>{role.aura}</span><span>{role.group}</span>{role.isNightRole && <span>Vai đêm</span>}</footer></article>)}</div></details>; })}</div></details>;
+  const visibleRoles = roles.filter(role => role.isImplemented !== false);
+  const factions = ['village', 'werewolf', 'special'];
+  return <details className="panel role-library"><summary>Danh sách vai trò <span>{visibleRoles.length} vai</span></summary><p className="muted">Thư viện hiển thị các vai đang hỗ trợ trong game.</p><div className="role-library-groups">{factions.map(faction => { const factionRoles = visibleRoles.filter(role => role.faction === faction); if (!factionRoles.length) return null; return <details key={faction}><summary>{FACTION_LABEL[faction]} <span>{factionRoles.length}</span></summary><div className="role-library-grid">{factionRoles.map(role => <article key={role.key} className="library-role" title={role.description}><RoleImage roleKey={role.key} label={role.labelVi} size="thumb" /><div><strong>{role.labelVi}</strong></div><p>{role.shortDescription}</p><footer><span>{role.aura}</span><span>{role.group}</span>{role.isNightRole && <span>Vai đêm</span>}</footer></article>)}</div></details>; })}</div></details>;
 }
 
 function RolePanel({ state }) {
@@ -513,7 +519,7 @@ function WitchActionPanel({ me, targets = [], witchVictims = [], selectedTarget,
 
 function ModeratorPanel({ state, onNext, onSkip, onEndNight }) {
   const moderator = state?.moderator;
-  const stages = moderator?.stages || [];
+  const stages = (moderator?.stages || []).filter(stage => stage.isImplemented !== false);
   const currentIndex = state?.currentNightStageIndex ?? -1;
   const isLastStage = currentIndex === stages.length - 1;
   return (
@@ -521,7 +527,7 @@ function ModeratorPanel({ state, onNext, onSkip, onEndNight }) {
       <div className="panel-heading"><div><p className="eyebrow">Người quản trò</p><h2>Bảng điều khiển Quản trò</h2></div><span className="count-badge">{PHASE_LABEL[state?.phase] || '—'}</span></div>
       <p className="moderator-prompt">{moderator?.prompt || 'Đêm đã hoàn tất.'}</p>
       <div className="moderator-stages">
-        {stages.map(stage => <div key={stage.key} className={`${state?.currentNightStage === stage.key ? 'active' : ''} ${stage.completed ? 'completed' : ''}`}><span>{stage.completed ? '✓' : '○'}</span><strong>{stage.labelVi}</strong><small>{stage.isImplemented ? 'Đã triển khai' : 'Chưa triển khai vai này'}</small></div>)}
+        {stages.map(stage => <div key={stage.key} className={`${state?.currentNightStage === stage.key ? 'active' : ''} ${stage.completed ? 'completed' : ''}`}><span>{stage.completed ? '✓' : '○'}</span><strong>{stage.labelVi}</strong></div>)}
       </div>
       <p className="expected-players">Người mang vai: <strong>{(moderator?.expectedPlayers || []).map(player => `${player.name} (${player.alive ? 'còn sống' : 'đã bị loại'})`).join(', ') || 'Không có'}</strong></p>
       {moderator?.noAliveActorMessage && <p className="moderator-dead-role-note">{moderator.noAliveActorMessage}</p>}
