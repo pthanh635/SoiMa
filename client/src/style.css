@@ -72,6 +72,7 @@ h1, h2 { letter-spacing: -.025em; }
 .role-seer { border-top-color: #756bd5; }.role-seer::after { background: rgba(95,82,201,.15); }
 .role-guard { border-top-color: #3e9f83; }.role-guard::after { background: rgba(49,139,112,.14); }
 .role-witch { border-top-color: #a672ce; }.role-witch::after { background: rgba(155,92,196,.14); }
+.role-hunter { border-top-color: #d09b3c; }.role-hunter::after { background: rgba(208,155,60,.15); }
 .team-label { color: #cbc1ce; }
 .role-hint { margin: 16px 0 0; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.08); color: #aaa1ae; line-height: 1.6; font-size: .9rem; }
 .potion-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 15px; }
@@ -124,6 +125,7 @@ h1, h2 { letter-spacing: -.025em; }
 .moderator-panel h2, .moderator-panel p { margin-bottom: 0; }.moderator-prompt { color: #e1d5bd; line-height: 1.55; }.moderator-stages { display: grid; gap: 6px; }.moderator-stages > div { display: grid; grid-template-columns: 22px minmax(120px, 1fr) auto; gap: 8px; align-items: center; padding: 9px 10px; border-radius: 9px; color: #8f8791; background: rgba(0,0,0,.14); }.moderator-stages > div.active { color: #f0dfb8; background: rgba(179,134,50,.18); box-shadow: inset 3px 0 #d0a750; }.moderator-stages > div.completed { opacity: .65; }.moderator-stages small { font-size: .7rem; }.expected-players, .moderator-private-note { padding: 11px 12px; border-radius: 10px; color: #bdb3c0; background: rgba(0,0,0,.18); font-size: .84rem; }.moderator-private-note { color: #ddc9ed; background: rgba(106,61,137,.17); }.moderator-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
 .moderator-dead-role-note { padding: 11px 12px; border: 1px solid rgba(218,188,120,.22); border-radius: 10px; color: #dfc891; background: rgba(120,82,29,.16); font-size: .84rem; line-height: 1.5; }
 .day-panel { border-top: 3px solid #b5934d; }.voting-panel { border-top: 3px solid #9d3345; }
+.hunter-shot-panel { border-top: 3px solid #d09b3c; }
 .success-note { border-color: rgba(67,168,125,.28); color: #a9e1c5; background: rgba(34,119,82,.12); }
 .chat-panel { min-width: 0; }
 .online-dot { color: #91d7b6; background: rgba(39,130,91,.13); }

@@ -10,7 +10,7 @@ export const ROLE_META = {
   night_watchman: roleMeta('night_watchman', 'Người gác đêm', 'Night Watchman', 'village', 'Thiện', 'Dân thường nâng cao', false, true, 'Biết ai đang được bảo vệ. Có khả năng chặn một cuộc tấn công của Sói tối đa vài lần trong game. Vai trò thiên về phòng thủ, giúp phe Dân kéo dài thời gian suy luận.', 'Vai phòng thủ nâng cao, chưa triển khai.'),
   butcher: roleMeta('butcher', 'Đồ tể', 'Butcher', 'village', 'Thiện', 'Dân thường nâng cao', false, true, 'Sở hữu một số lượt cứu hạn chế, có thể dùng để cứu nhiều người trong một đêm tùy luật. Đây là dạng bảo vệ nâng cao nhưng số lần hành động có giới hạn.', 'Bảo vệ nâng cao có số lượt cứu giới hạn, chưa triển khai.'),
   monk: roleMeta('monk', 'Thầy tu', 'Monk', 'village', 'Thiện', 'Dân thường', false, true, 'Mỗi đêm có thể ban phước và bảo vệ một người, giúp họ không bị Sói tấn công hoặc tránh một số năng lực đặc biệt khác. Một số bản chơi cho phép Thầy tu tự bảo vệ.', 'Ban phước bảo vệ người chơi, chưa triển khai.'),
-  hunter: roleMeta('hunter', 'Thợ săn', 'Hunter', 'village', 'Thiện', 'Dân thường', false, false, 'Nếu bị Sói giết hoặc bị treo cổ, Thợ săn có quyền chọn bắn chết một người đi cùng mình. Đây là vai trò tạo sự cân bằng, khiến Sói phải dè chừng khi tấn công.', 'Khi chết có thể kéo theo một người khác, chưa triển khai.'),
+  hunter: roleMeta('hunter', 'Thợ săn', 'Hunter', 'village', 'Thiện', 'Dân thường', true, false, 'Nếu bị Sói giết hoặc bị treo cổ, Thợ săn có quyền chọn bắn chết một người đi cùng mình. Đây là vai trò tạo sự cân bằng, khiến Sói phải dè chừng khi tấn công.', 'Khi chết có thể bắn chết một người khác.'),
   seer: roleMeta('seer', 'Tiên tri', 'Seer', 'village', 'Thiện', 'Dân mạnh', true, true, 'Mỗi đêm được quyền soi một người để biết họ thuộc phe Sói hay không. Đây là nhân vật quan trọng nhất của phe Dân, giúp định hướng nghi ngờ và bảo vệ dân thường.', 'Mỗi đêm soi một người để biết phe.'),
   medium: roleMeta('medium', 'Thầy đồng', 'Medium', 'village', 'Không rõ', 'Dân mạnh', false, true, 'Có thể giao tiếp với người chết và đôi khi hồi sinh một dân làng. Nếu hồi sinh trúng Sói thì có thể gây bất lợi cho phe Dân. Vai trò này có tính rủi ro cao.', 'Giao tiếp/hồi sinh người chết tùy luật, chưa triển khai.'),
   jailer: roleMeta('jailer', 'Giám ngục', 'Jailer', 'village', 'Không rõ', 'Dân mạnh nâng cao', false, true, 'Có khả năng giam giữ người chơi để nghe họ nói chuyện hoặc vô hiệu hóa khả năng của họ. Ngoài ra còn có thể đưa vũ khí để các người chơi này bắn nhau. Vai trò khó đoán, đôi khi lợi hoặc hại tùy tình huống.', 'Giam giữ/vô hiệu hóa người chơi, chưa triển khai.'),
@@ -125,6 +125,7 @@ export function startGame(room) {
     player.role = roles[index];
     player.team = ROLE_META[player.role]?.team || 'village';
     player.alive = true;
+    player.hasUsedHunterShot = false;
     player.witchPotions = player.role === 'witch'
       ? { heal: true, poison: true }
       : null;
@@ -299,6 +300,13 @@ export function endNight(room) {
   room.nightActions = emptyNightActions();
   room.votes = {};
 
+  const deadHunter = victims.find(player => player.role === 'hunter' && !player.hasUsedHunterShot);
+  if (deadHunter) {
+    const killedByWolves = wolfTargetId === deadHunter.id && wolfTargetId !== guardTargetId && wolfTargetId !== healTargetId;
+    const cause = poisonTargetId === deadHunter.id && !killedByWolves ? 'poison' : 'night';
+    if (queueHunterShot(room, deadHunter, cause, 'day')) return;
+  }
+
   const winner = checkWin(room.players);
   if (winner) return finishGame(room, winner);
 
@@ -333,6 +341,7 @@ export function endVote(room) {
 
   const entries = Object.entries(count).sort((a, b) => b[1] - a[1]);
 
+  let eliminated = null;
   if (entries.length === 0) {
     room.resultMessage = 'Không có ai bị treo cổ vì chưa có phiếu hợp lệ.';
   } else if (entries.length > 1 && entries[0][1] === entries[1][1]) {
@@ -340,11 +349,16 @@ export function endVote(room) {
   } else if (entries[0][0] === BLANK_VOTE) {
     room.resultMessage = 'Biểu quyết chọn Phiếu trắng. Không ai bị treo cổ.';
   } else {
-    const eliminated = room.players.find(p => p.id === entries[0][0]);
+    eliminated = room.players.find(p => p.id === entries[0][0]);
     if (eliminated) {
       eliminated.alive = false;
       room.resultMessage = `${eliminated.name} bị treo cổ.`;
     }
+  }
+
+  if (eliminated?.role === 'hunter' && !eliminated.hasUsedHunterShot) {
+    room.resultMessage = 'Thợ săn bị treo cổ và được quyền bắn một người.';
+    if (queueHunterShot(room, eliminated, 'vote', 'night')) return;
   }
 
   const winner = checkWin(room.players);
@@ -353,6 +367,38 @@ export function endVote(room) {
   const voteResultMessage = room.resultMessage;
   room.round += 1;
   beginNight(room, voteResultMessage);
+}
+
+export function hunterShot(room, actorId, targetId) {
+  ensurePhase(room, 'hunter_shot');
+  const pending = room.pendingHunterShot;
+  if (!pending || pending.hunterId !== actorId) throw new Error('Bạn không có phát bắn Thợ săn đang chờ xử lý.');
+  const hunter = room.players.find(player => player.id === actorId);
+  if (!hunter || hunter.role !== 'hunter' || hunter.alive || hunter.hasUsedHunterShot) {
+    throw new Error('Thợ săn không thể sử dụng phát bắn này.');
+  }
+  if (targetId === actorId) throw new Error('Thợ săn không thể tự bắn mình.');
+  const target = findAlivePlayer(room, targetId);
+
+  hunter.hasUsedHunterShot = true;
+  target.alive = false;
+  room.pendingHunterShot = null;
+  room.resultMessage = `Thợ săn đã bắn ${target.name}.`;
+  continueAfterHunterShot(room, pending.phaseAfterShot);
+  return { message: `Bạn đã bắn ${target.name}.` };
+}
+
+export function moderatorSkipHunterShot(room, actorId) {
+  ensureModerator(room, actorId);
+  ensurePhase(room, 'hunter_shot');
+  const pending = room.pendingHunterShot;
+  if (!pending) throw new Error('Không có phát bắn Thợ săn đang chờ xử lý.');
+  const hunter = room.players.find(player => player.id === pending.hunterId);
+  if (hunter) hunter.hasUsedHunterShot = true;
+  room.pendingHunterShot = null;
+  room.resultMessage = 'Người quản trò đã bỏ qua phát bắn của Thợ săn.';
+  continueAfterHunterShot(room, pending.phaseAfterShot);
+  return { message: 'Đã bỏ qua phát bắn của Thợ săn.' };
 }
 
 export function addChat(room, senderId, text) {
@@ -417,6 +463,11 @@ export function publicStateFor(room, socketId) {
     phase: room.phase,
     round: room.round,
     resultMessage: room.resultMessage,
+    pendingHunterShot: room.pendingHunterShot
+      ? (isModerator || me?.id === room.pendingHunterShot.hunterId
+        ? { ...room.pendingHunterShot, isMine: me?.id === room.pendingHunterShot.hunterId }
+        : { active: true })
+      : null,
     chat: room.chat,
     votesCount: Object.keys(room.votes).length,
     aliveCount: room.players.filter(p => p.alive).length,
@@ -451,6 +502,7 @@ export function publicStateFor(room, socketId) {
       team: me.team,
       teamLabel: TEAM_LABEL[me.team],
       alive: me.alive,
+      hasUsedHunterShot: me.hasUsedHunterShot,
       isModerator: false,
       witchPotions: me.role === 'witch' ? me.witchPotions : null,
       witchVictim: me.role === 'witch' && room.currentNightStage === 'witch'
@@ -479,6 +531,24 @@ function beginNight(room, message) {
   room.completedNightStages = [];
   room.resultMessage = message;
   moveToNextStage(room);
+}
+
+function queueHunterShot(room, hunter, cause, phaseAfterShot) {
+  if (!room.players.some(player => player.alive && player.id !== hunter.id)) return false;
+  room.pendingHunterShot = { hunterId: hunter.id, hunterName: hunter.name, cause, phaseAfterShot };
+  room.phase = 'hunter_shot';
+  return true;
+}
+
+function continueAfterHunterShot(room, phaseAfterShot) {
+  const winner = checkWin(room.players);
+  if (winner) return finishGame(room, winner);
+  if (phaseAfterShot === 'night') {
+    const message = room.resultMessage;
+    room.round += 1;
+    return beginNight(room, message);
+  }
+  room.phase = 'day';
 }
 
 function moveToNextStage(room) {
@@ -591,6 +661,7 @@ function finishGame(room, winner) {
   room.nightTurnIndex = -1;
   room.currentNightStage = null;
   room.currentNightStageIndex = -1;
+  room.pendingHunterShot = null;
   room.resultMessage = winner === 'village'
     ? 'Dân làng chiến thắng!'
     : 'Ma sói chiến thắng!';

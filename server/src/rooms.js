@@ -25,6 +25,7 @@ export function createRoom(moderatorSocketId, moderatorName) {
     nightTurn: null,
     nightTurnIndex: -1,
     nightActions: emptyNightActions(),
+    pendingHunterShot: null,
     votes: {},
     chat: []
   };
@@ -95,6 +96,7 @@ function makePlayer(id, name) {
     role: null,
     team: null,
     alive: true,
+    hasUsedHunterShot: false,
     witchPotions: null
   };
 }

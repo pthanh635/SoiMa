@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { Server } from 'socket.io';
 import { createRoom, getRoomByPlayer, joinRoom, normalizeCode, removePlayer, rooms } from './rooms.js';
-import { addChat, doNightAction, endVote, goVoting, moderatorEndNight, moderatorNextStage, moderatorSkipStage, publicStateFor, skipNightTurn, startGame, votePlayer } from './gameLogic.js';
+import { addChat, doNightAction, endVote, goVoting, hunterShot, moderatorEndNight, moderatorNextStage, moderatorSkipHunterShot, moderatorSkipStage, publicStateFor, skipNightTurn, startGame, votePlayer } from './gameLogic.js';
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
@@ -124,6 +124,24 @@ io.on('connection', socket => {
       endVote(room);
       emitRoom(room);
       return { ok: true };
+    });
+  });
+
+  socket.on('hunter_shot', ({ roomCode, targetId }, cb) => {
+    safe(cb, () => {
+      const room = requireRoom(roomCode);
+      const result = hunterShot(room, socket.id, targetId);
+      emitRoom(room);
+      return { ok: true, message: result.message };
+    });
+  });
+
+  socket.on('moderator_skip_hunter_shot', ({ roomCode }, cb) => {
+    safe(cb, () => {
+      const room = requireRoom(roomCode);
+      const result = moderatorSkipHunterShot(room, socket.id);
+      emitRoom(room);
+      return { ok: true, message: result.message };
     });
   });
 

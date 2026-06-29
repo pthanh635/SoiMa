@@ -6,6 +6,7 @@ const PHASE_LABEL = {
   night: 'Ban đêm',
   day: 'Ban ngày',
   voting: 'Biểu quyết',
+  hunter_shot: 'Phát bắn Thợ săn',
   ended: 'Kết thúc'
 };
 
@@ -14,7 +15,8 @@ const ROLE_HINT = {
   werewolf: 'Ban đêm chọn một người để cắn. Ban ngày hãy che giấu thân phận của bạn.',
   seer: 'Mỗi đêm soi một người để biết họ thuộc phe Dân làng hay Ma sói.',
   guard: 'Mỗi đêm chọn một người để bảo vệ khỏi đòn cắn của Ma sói.',
-  witch: 'Bạn có một bình cứu và một bình độc, mỗi bình chỉ dùng được một lần trong cả game.'
+  witch: 'Bạn có một bình cứu và một bình độc, mỗi bình chỉ dùng được một lần trong cả game.',
+  hunter: 'Khi chết, bạn có một phát bắn cuối cùng để loại một người chơi còn sống.'
 };
 
 const NIGHT_INFO = {
@@ -134,6 +136,7 @@ export default function App() {
             {state.phase === 'night' && <NightPanel state={state} players={alivePlayers} canAct={canActAtNight} selectedTarget={selectedTarget} setSelectedTarget={setSelectedTarget} onAction={(targetId, action) => emit('night_action', { roomCode: state.code, targetId, action })} onSkip={() => emit('skip_night_turn', { roomCode: state.code })} onNextStage={() => emit('moderator_next_stage', { roomCode: state.code })} onSkipStage={() => emit('moderator_skip_stage', { roomCode: state.code })} onEndNight={() => emit('end_night', { roomCode: state.code })} />}
             {state.phase === 'day' && <DayPanel state={state} onGoVoting={() => emit('go_voting', { roomCode: state.code })} />}
             {state.phase === 'voting' && <VotingPanel state={state} players={alivePlayers} selectedTarget={selectedTarget} setSelectedTarget={setSelectedTarget} hasVoted={hasVoted} onVote={targetId => emit('vote_player', { roomCode: state.code, targetId }, () => setHasVoted(true))} onEndVote={() => emit('end_vote', { roomCode: state.code })} />}
+            {state.phase === 'hunter_shot' && <HunterShotPanel state={state} players={alivePlayers} selectedTarget={selectedTarget} setSelectedTarget={setSelectedTarget} onShoot={targetId => emit('hunter_shot', { roomCode: state.code, targetId })} onSkip={() => emit('moderator_skip_hunter_shot', { roomCode: state.code })} />}
             {state.phase === 'ended' && <EndedPanel state={state} />}
             {state.phase !== 'ended' && <ChatBox state={state} chatText={chatText} setChatText={setChatText} onSend={sendMessage} />}
           </div>
@@ -323,6 +326,12 @@ function VotingPanel({ state, players = [], selectedTarget, setSelectedTarget, h
   const canVote = Boolean(state?.me?.alive);
   const targets = players.filter(player => player.id !== state?.me?.id);
   return <section className="panel action-panel voting-panel"><p className="eyebrow">{state?.votesCount || 0} phiếu đã ghi nhận</p><h1 className="phase-title">Biểu quyết treo cổ</h1><p className="instruction">Chọn người bạn nghi ngờ hoặc chọn Phiếu trắng.</p>{canVote ? <>{hasVoted && <div className="success-note">{selectedTarget === BLANK_VOTE ? 'Bạn đã chọn Phiếu trắng.' : 'Phiếu của bạn đã được ghi nhận.'} Bạn vẫn có thể đổi phiếu trước khi Người quản trò chốt.</div>}<TargetGrid players={targets} selected={selectedTarget} onSelect={setSelectedTarget} prefix="Bỏ phiếu" includeBlank /><button className="primary-btn action-confirm" disabled={!selectedTarget} onClick={() => onVote(selectedTarget)}>{hasVoted ? 'Cập nhật phiếu' : 'Xác nhận bỏ phiếu'}</button></> : <div className="waiting-panel"><strong>{state?.isModerator ? 'Bạn đang điều khiển biểu quyết' : 'Bạn không thể biểu quyết'}</strong><p>{state?.isModerator ? 'Người quản trò không tham gia bỏ phiếu.' : 'Người chơi đã chết chỉ có thể theo dõi kết quả.'}</p></div>}{state?.isModerator && <div className="host-controls"><p>Điều khiển quản trò</p><button className="danger-btn" onClick={onEndVote}>Chốt biểu quyết</button></div>}</section>;
+}
+
+function HunterShotPanel({ state, players = [], selectedTarget, setSelectedTarget, onShoot, onSkip }) {
+  const isHunter = Boolean(state?.pendingHunterShot?.isMine);
+  const targets = players.filter(player => player.id !== state?.me?.id);
+  return <section className="panel action-panel hunter-shot-panel"><p className="eyebrow">Phát bắn cuối cùng</p>{isHunter ? <><h1 className="phase-title">Bạn là Thợ săn. Hãy chọn một người để bắn.</h1><p className="instruction">Bạn đã bị loại và có quyền bắn một người trước khi rời ván.</p><TargetGrid players={targets} selected={selectedTarget} onSelect={setSelectedTarget} prefix="Chọn để bắn" /><button className="danger-btn action-confirm" disabled={!selectedTarget} onClick={() => onShoot(selectedTarget)}>Bắn người này</button></> : state?.isModerator ? <><h1 className="phase-title">Thợ săn đang chọn người bắn.</h1><p className="instruction"><strong>{state?.pendingHunterShot?.hunterName}</strong> có một phát bắn cuối cùng.</p><div className="waiting-panel"><strong>Mục tiêu còn sống</strong><p>{targets.map(player => player.name).join(', ') || 'Không còn mục tiêu hợp lệ.'}</p></div><div className="host-controls"><p>Điều khiển quản trò</p><button className="danger-outline" onClick={onSkip}>Bỏ qua phát bắn</button></div></> : <><h1 className="phase-title">Thợ săn đang chọn người bắn.</h1><div className="waiting-panel"><strong>Đang chờ Thợ săn quyết định.</strong><p>Ván chơi sẽ tiếp tục sau khi phát bắn được xử lý.</p></div></>}</section>;
 }
 
 function EndedPanel({ state }) {
